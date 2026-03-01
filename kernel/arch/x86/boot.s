@@ -2,13 +2,11 @@
 .set MULTIBOOT_FLAGS, 0x00000003
 .set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
-.section .multiboot
+.section .text
     .long MULTIBOOT_MAGIC
     .long MULTIBOOT_FLAGS
     .long MULTIBOOT_CHECKSUM
-
-.section .text
-.global _start
+    .global _start
 _start:
     cli
     mov $stack_top, %esp
