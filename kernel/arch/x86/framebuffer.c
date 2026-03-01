@@ -6,22 +6,25 @@ uint32_t fb_height = 0;
 uint32_t fb_pitch = 0;
 uint32_t fb_bpp = 0;
 
-
-void framebuffer_init(uint32_t w, uint32_t h, uint32_t bpp) {
-    (void)bpp;
-    // In a real system, read from multiboot VBE info.
-    fb = (uint32_t*)0xE0000000; // example mapped address
-    fb_width = w;
-    fb_height = h;
+void fb_init(uint8_t* address, uint32_t width, uint32_t height, uint32_t pitch, uint32_t bpp) {
+    fb_address = address;
+    fb_width = width;
+    fb_height = height;
+    fb_pitch = pitch;
+    fb_bpp = bpp;
 }
 
-void framebuffer_clear(uint32_t color) {
-    for (uint32_t y = 0; y < fb_height; ++y)
-        for (uint32_t x = 0; x < fb_width; ++x)
-            fb[y * fb_width + x] = color;
+void fb_clear(uint32_t color) {
+    uint32_t* fb = (uint32_t*)fb_address;
+    for (uint32_t y = 0; y < fb_height; ++y) {
+        for (uint32_t x = 0; x < fb_width; ++x) {
+            fb[y * (fb_pitch / 4) + x] = color;
+        }
+    }
 }
 
-void framebuffer_putpixel(uint32_t x, uint32_t y, uint32_t color) {
+void fb_putpixel(uint32_t x, uint32_t y, uint32_t color) {
     if (x >= fb_width || y >= fb_height) return;
-    fb[y * fb_width + x] = color;
+    uint32_t* fb = (uint32_t*)fb_address;
+    fb[y * (fb_pitch / 4) + x] = color;
 }
