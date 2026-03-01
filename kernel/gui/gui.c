@@ -2,7 +2,7 @@
 #include "cursor.h"
 #include "input.h"
 #include "desktop.h"
-#include "arch/x86/framebuffer.h"
+#include "../arch/x86/framebuffer.h"
 
 void gui_init(void) {
     framebuffer_clear(0x202020);

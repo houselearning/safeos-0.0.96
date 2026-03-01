@@ -1,7 +1,7 @@
 // notepad.c
 #include "notepad.h"
-#include "window.h"
-#include "fs.h"
+#include "../window.h"
+#include "../../core/fs.h"
 
 static window_t *win;
 static char buffer[4096];

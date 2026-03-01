@@ -1,6 +1,6 @@
 // spreadsheet.c
 #include "spreadsheet.h"
-#include "window.h"
+#include "../window.h"
 
 #define ROWS 16
 #define COLS 8
