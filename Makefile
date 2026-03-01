@@ -16,22 +16,22 @@ OBJ   = $(SRC_C:.c=.o) $(SRC_S:.s=.o)
 all: iso
 
 $(KERNEL): $(OBJ)
-    $(LD) $(LDFLAGS) -o $@ $(OBJ)
+	$(LD) $(LDFLAGS) -o $@ $(OBJ)
 
 %.o: %.c
-    $(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o: %.s
-    $(AS) $< -o $@
+	$(AS) $< -o $@
 
 iso: $(KERNEL) grub
-    mkdir -p $(ISO_DIR)/boot/grub
-    cp $(KERNEL) $(ISO_DIR)/SafeOS.bin
-    cp iso/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
-    grub-mkrescue -o SafeOS-1.0.iso $(ISO_DIR)
+	mkdir -p $(ISO_DIR)/boot/grub
+	cp $(KERNEL) $(ISO_DIR)/SafeOS.bin
+	cp iso/grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
+	grub-mkrescue -o SafeOS-1.0.iso $(ISO_DIR)
 
 grub:
-    mkdir -p iso
+	mkdir -p iso
 
 clean:
-    rm -rf $(OBJ) $(KERNEL) build SafeOS-1.0.iso
+	rm -rf $(OBJ) $(KERNEL) build SafeOS-1.0.iso
