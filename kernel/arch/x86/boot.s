@@ -2,12 +2,15 @@
 .set MULTIBOOT_FLAGS, 0x00000003
 .set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
-/* Place multiboot header in its own section so the linker/script
-   will emit it at the start of the output file (within the first 8KiB). */
-.section .multiboot
-    .long MULTIBOOT_MAGIC
-    .long MULTIBOOT_FLAGS
-    .long MULTIBOOT_CHECKSUM
+/* Place multiboot header in its own allocatable section so the
+    linker will emit it at the start of the output file (within the
+    first 8 KiB). Marking the section as allocatable ensures it is
+    included in the ELF program headers and visible to GRUB. */
+.section .multiboot,"aw",@progbits
+     .align 4
+     .long MULTIBOOT_MAGIC
+     .long MULTIBOOT_FLAGS
+     .long MULTIBOOT_CHECKSUM
 
 .section .text
     .global _start
