@@ -7,6 +7,7 @@ typedef struct gui_event {
     int y;
     int button;
     int key;
+    int ch; /* character code for text input events */
 } gui_event_t;
 
 #endif

@@ -75,7 +75,7 @@ void file_explorer_handle_event(gui_event_t *ev) {
         if (gui_point_in_rect(ev->x, ev->y, nx, ny + 24, CONTEXT_W, 24)) {
             if (selected_index >= 0) {
                 char path[128];
-                snprintf(path, sizeof(path), "A:/%s", entries[selected_index].name);
+                ksnprintf(path, sizeof(path), "A:/%s", entries[selected_index].name);
                 fs_delete_file(path);
                 selected_index = -1;
             }

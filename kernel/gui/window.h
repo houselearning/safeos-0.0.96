@@ -14,9 +14,16 @@ typedef struct window {
 } window_t;
 
 // Create a window
-window_t* window_create(int x, int y, int w, int h, const char *title);
+// Note: many callers pass the title first ("Title", x, y, w, h)
+window_t* window_create(const char *title, int x, int y, int w, int h);
 
-// Draw a window
+// Begin drawing into a window (prepare clipping/backbuffer)
+void window_begin_draw(window_t *win);
+
+// Finish drawing a window (flush backbuffer)
+void window_end_draw(window_t *win);
+
+// Draw a window (legacy API)
 void window_draw(window_t *win);
 
 // Handle events for a window

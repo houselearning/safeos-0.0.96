@@ -1,8 +1,8 @@
 #include "browser.h"
 #include "../window.h"
-#include "net.h"
-#include "gui.h"
-#include <string.h>
+#include "../../core/net.h"
+#include "../gui.h"
+#include "../../core/string.h"
 
 static window_t *win;
 
