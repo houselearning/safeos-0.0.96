@@ -16,7 +16,9 @@ OBJ   = $(SRC_C:.c=.o) $(SRC_S:.s=.o)
 all: iso
 
 $(KERNEL): $(OBJ)
-	$(LD) $(LDFLAGS) -o $@ $(OBJ)
+	# Ensure the boot object is linked first so the multiboot header is within
+	# the first 8 KiB of the output file.
+	$(LD) $(LDFLAGS) -o $@ kernel/arch/x86/boot.o $(filter-out kernel/arch/x86/boot.o,$(OBJ))
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

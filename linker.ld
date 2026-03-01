@@ -2,12 +2,12 @@ ENTRY(_start)
 
 SECTIONS
 {
-  . = 1M;
-
   .multiboot :
   {
     *(.multiboot)
   }
+
+  . = 1M;
 
   .text :
   {
