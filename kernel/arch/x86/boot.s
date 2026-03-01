@@ -2,10 +2,14 @@
 .set MULTIBOOT_FLAGS, 0x00000003
 .set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
-.section .text
+/* Place multiboot header in its own section so the linker/script
+   will emit it at the start of the output file (within the first 8KiB). */
+.section .multiboot
     .long MULTIBOOT_MAGIC
     .long MULTIBOOT_FLAGS
     .long MULTIBOOT_CHECKSUM
+
+.section .text
     .global _start
 _start:
     cli
