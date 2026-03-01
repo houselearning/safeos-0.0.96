@@ -3,15 +3,8 @@
 
 #include <stdint.h>
 #include "window.h"
+#include "gui_event.h"
 
-// Forward declaration of GUI event type
-typedef struct gui_event {
-    int type;
-    int x;
-    int y;
-    int button;
-    int key;
-} gui_event_t;
 
 // Show startup splash screen
 void desktop_show_startup_screen(const char *title, const char *msg);

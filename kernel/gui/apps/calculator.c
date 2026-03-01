@@ -1,7 +1,7 @@
 // calculator.c
 #include "calculator.h"
-#include "window.h"
-#include "gui.h"
+#include "../window.h"
+#include "../gui.h"
 
 static window_t *win;
 static char display[32] = "0";
