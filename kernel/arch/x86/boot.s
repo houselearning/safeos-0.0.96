@@ -10,22 +10,7 @@
 _start:
     cli
     mov $stack_top, %esp
-    /* Aggressive serial probe: repeatedly write '>' + CR to COM1 (0x3F8)
-       and hang so we can verify the kernel entry is reached. */
-    mov $0x3f8, %dx
-.serial_loop:
-    mov $'>', %al
-    outb %al, %dx
-    mov $0x0d, %al
-    outb %al, %dx
-    /* small busy delay */
-    mov $0x200000, %ecx
-.delay_loop:
-    dec %ecx
-    jne .delay_loop
-    jmp .serial_loop
-
-    /* Not reached while loop active, kept for reference */
+    /* Proceed to kernel entry (multiboot registers expected from bootloader) */
     push %ebx          # multiboot info
     push %eax          # multiboot magic
     call kmain
