@@ -16,4 +16,7 @@ void input_handle_mouse(int dx, int dy, int buttons);
 // Dispatch queued events to the desktop/window manager
 void input_dispatch(void);
 
+// Poll for a single GUI event. Returns non-zero if `out` was filled.
+int input_poll(gui_event_t *out);
+
 #endif
