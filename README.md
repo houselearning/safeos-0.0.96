@@ -1,6 +1,6 @@
 # SafeOS (v0.0.96)
 
-A small hobby x86 operating system kernel with a minimal GUI and simple apps.
+A small x86 operating system kernel with a minimal GUI and simple apps.
 
 ## Overview
 
@@ -61,4 +61,4 @@ Contributions are welcome. Open issues for bugs or feature requests, and send pu
 
 ## License
 
-This repository does not include a LICENSE file. Add one (for example, an MIT or BSD license) before accepting external contributions.
+Apache Licence 2.0
