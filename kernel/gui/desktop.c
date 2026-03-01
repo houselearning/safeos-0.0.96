@@ -1,5 +1,5 @@
 #include "desktop.h"
-#include "arch/x86/framebuffer.h"
+#include "../arch/x86/framebuffer.h"
 #include "window.h"
 #include "apps/notepad.h"
 #include "apps/calculator.h"
