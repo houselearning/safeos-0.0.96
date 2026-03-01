@@ -1,7 +1,11 @@
 #include "framebuffer.h"
 
-static uint32_t *fb = 0;
-static uint32_t fb_width, fb_height;
+uint8_t* fb_address = 0;
+uint32_t fb_width = 0;
+uint32_t fb_height = 0;
+uint32_t fb_pitch = 0;
+uint32_t fb_bpp = 0;
+
 
 void framebuffer_init(uint32_t w, uint32_t h, uint32_t bpp) {
     (void)bpp;
