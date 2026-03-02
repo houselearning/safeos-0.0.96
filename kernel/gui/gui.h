@@ -24,6 +24,10 @@
 // Utility functions
 int gui_point_in_rect(int px, int py, int x, int y, int w, int h);
 
+// GUI lifecycle
+void gui_init(void);
+void gui_main_loop(void);
+
 // Drawing functions
 void gui_draw_rect(int x, int y, int w, int h, uint32_t color);
 void gui_draw_text(int x, int y, const char *text, uint32_t color);

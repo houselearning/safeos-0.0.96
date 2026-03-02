@@ -6,7 +6,7 @@ CC       = i686-elf-gcc
 LD       = i686-elf-ld
 AS       = i686-elf-as
 
-CFLAGS   = -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+CFLAGS   = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Ikernel
 LDFLAGS  = -T linker.ld -nostdlib
 
 SRC_C = $(shell find kernel -name '*.c')

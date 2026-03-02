@@ -2,21 +2,22 @@
 .set MULTIBOOT_FLAGS, 0x00000003
 .set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
-/* Place multiboot header in its own allocatable section so the
-    linker will emit it at the start of the output file (within the
-    first 8 KiB). Marking the section as allocatable ensures it is
-    included in the ELF program headers and visible to GRUB. */
-.section .multiboot,"aw",@progbits
-     .align 4
-     .long MULTIBOOT_MAGIC
-     .long MULTIBOOT_FLAGS
-     .long MULTIBOOT_CHECKSUM
-
+/* Emit the Multiboot header inside the first loadable section (.text)
+   so it resides within the first 8 KiB of the file and is in a PT_LOAD
+   program header for GRUB to find. */
 .section .text
+    .align 4
+    .long MULTIBOOT_MAGIC
+    .long MULTIBOOT_FLAGS
+    .long MULTIBOOT_CHECKSUM
     .global _start
 _start:
     cli
     mov $stack_top, %esp
+    /* Very early serial tick from assembly so host sees kernel start */
+    mov $0x3f8, %dx
+    mov $'S', %al
+    outb %al, %dx
     /* Proceed to kernel entry (multiboot registers expected from bootloader) */
     push %ebx          # multiboot info
     push %eax          # multiboot magic
