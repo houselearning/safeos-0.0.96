@@ -4,8 +4,10 @@
 #include "../arch/x86/framebuffer.h"
 #include <stdint.h>
 #include "memory.h"
+#include "paging.h"
 #include "../gui/gui.h"
 #include "../gui/desktop.h"
+#include "text_desktop.h"
 
 /* Simple serial helpers for runtime diagnostics (file-scope) */
 static void serial_putc(char c) {
@@ -34,6 +36,9 @@ void kmain(unsigned long magic, unsigned long addr) {
 
     interrupts_init();
     memory_init();
+     /* Enable an identity 4MB-page mapping so the kernel can access
+         physical regions (e.g. framebuffer physbase) directly. */
+     paging_enable_identity_4mb();
     /* If the bootloader provided multiboot info, try to extract VBE mode
        information (linear framebuffer address, resolution, pitch, bpp)
        and initialize the framebuffer with the real values. Otherwise
@@ -88,6 +93,14 @@ void kmain(unsigned long magic, unsigned long addr) {
     } else {
         framebuffer_init(1024, 768, 32);
     }
+    /* If no usable linear framebuffer was provided (or mapping not available)
+       use the simple text-mode desktop fallback which writes to 0xB8000. */
+    extern uint8_t* fb_address;
+    if (!fb_address) {
+        text_desktop_run();
+        /* text_desktop_run does not return */
+    }
+
     keyboard_init();
     mouse_init();
 
