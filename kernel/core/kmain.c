@@ -32,6 +32,9 @@ void kmain(unsigned long magic, unsigned long addr) {
     /* Very early serial tick so headless consoles know the kernel started. */
     __asm__ __volatile__("outb %%al, %%dx" :: "a"('!'), "d"((unsigned short)0x3f8));
 
+    /* Log multiboot registers passed by the bootloader */
+    serial_puts("ENTRY: magic=0x"); serial_puthex((uint32_t)magic); serial_puts(" addr=0x"); serial_puthex((uint32_t)addr); serial_putc('\n');
+
     /* (serial helpers are file-scope) */
 
     interrupts_init();
@@ -39,11 +42,11 @@ void kmain(unsigned long magic, unsigned long addr) {
      /* Enable an identity 4MB-page mapping so the kernel can access
          physical regions (e.g. framebuffer physbase) directly. */
      paging_enable_identity_4mb();
-    /* If the bootloader provided multiboot info, try to extract VBE mode
-       information (linear framebuffer address, resolution, pitch, bpp)
-       and initialize the framebuffer with the real values. Otherwise
-       fall back to conservative defaults. */
-    if (addr) {
+     /* If the bootloader provided multiboot info, try to extract VBE mode
+         information (linear framebuffer address, resolution, pitch, bpp)
+         and initialize the framebuffer with the real values. Otherwise
+         fall back to conservative defaults. */
+     if (addr) {
         typedef struct {
             uint32_t flags;
             uint32_t mem_lower, mem_upper;
@@ -68,7 +71,12 @@ void kmain(unsigned long magic, unsigned long addr) {
         } multiboot_info_t;
 
         multiboot_info_t *mb = (multiboot_info_t *)(uintptr_t)addr;
-        if (mb->flags & (1 << 12)) {
+        serial_puts("MB: addr=0x"); serial_puthex((uint32_t)addr); serial_puts(" flags=0x"); serial_puthex(mb->flags); serial_puts(" vbe_mode_info=0x"); serial_puthex(mb->vbe_mode_info); serial_puts(" vbe_mode=0x"); serial_puthex(mb->vbe_mode); serial_putc('\n');
+
+        /* Prefer using the vbe_mode_info pointer directly when provided by
+           the bootloader; some boot environments may not set the flags
+           bit consistently. */
+        if (mb->vbe_mode_info) {
             uint8_t *mode = (uint8_t *)(uintptr_t)mb->vbe_mode_info;
             if (mode) {
                 uint16_t pitch = *(uint16_t *)(mode + 0x10);
@@ -88,6 +96,7 @@ void kmain(unsigned long magic, unsigned long addr) {
                 framebuffer_init(1024, 768, 32);
             }
         } else {
+            serial_puts("MB: no vbe_mode_info pointer; using fallback\n");
             framebuffer_init(1024, 768, 32);
         }
     } else {
