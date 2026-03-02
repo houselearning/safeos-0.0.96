@@ -1,15 +1,36 @@
-#include "arch/x86/interrupts.h"
-#include "arch/x86/keyboard.h"
-#include "arch/x86/mouse.h"
-#include "arch/x86/framebuffer.h"
+#include "../arch/x86/interrupts.h"
+#include "../arch/x86/keyboard.h"
+#include "../arch/x86/mouse.h"
+#include "../arch/x86/framebuffer.h"
 #include <stdint.h>
-#include "core/memory.h"
-#include "gui/gui.h"
-#include "gui/desktop.h"
+#include "memory.h"
+#include "../gui/gui.h"
+#include "../gui/desktop.h"
+
+/* Simple serial helpers for runtime diagnostics (file-scope) */
+static void serial_putc(char c) {
+    __asm__ __volatile__("outb %%al, %%dx" :: "a"(c), "d"((unsigned short)0x3f8));
+}
+static void serial_puts(const char *s) {
+    while (*s) serial_putc(*s++);
+}
+/* print 32-bit hex (no prefix) */
+static void serial_puthex(uint32_t v) {
+    const char *hex = "0123456789ABCDEF";
+    for (int i = 7; i >= 0; --i) {
+        uint8_t nib = (v >> (i*4)) & 0xF;
+        serial_putc(hex[nib]);
+    }
+}
 
 void kmain(unsigned long magic, unsigned long addr) {
     (void)magic;
     (void)addr;
+
+    /* Very early serial tick so headless consoles know the kernel started. */
+    __asm__ __volatile__("outb %%al, %%dx" :: "a"('!'), "d"((unsigned short)0x3f8));
+
+    /* (serial helpers are file-scope) */
 
     interrupts_init();
     memory_init();
@@ -52,8 +73,11 @@ void kmain(unsigned long magic, unsigned long addr) {
                 uint32_t physbase = *(uint32_t *)(mode + 0x28);
                 if (physbase && width && height && bpp) {
                     fb_init((uint8_t *)(uintptr_t)physbase, width, height, pitch, bpp);
+                    /* Report framebuffer params over serial */
+                    serial_puts("FB: phys=0x"); serial_puthex(physbase); serial_puts(" w="); serial_puthex(width); serial_puts(" h="); serial_puthex(height); serial_puts(" p="); serial_puthex(pitch); serial_puts(" b="); serial_puthex(bpp); serial_putc('\n');
                 } else {
                     framebuffer_init(1024, 768, 32);
+                    serial_puts("FB: fallback init\n");
                 }
             } else {
                 framebuffer_init(1024, 768, 32);
@@ -67,17 +91,8 @@ void kmain(unsigned long magic, unsigned long addr) {
     keyboard_init();
     mouse_init();
 
-    /* Tiny serial debug: write a message to COM1 (0x3F8) so headless VMs
-       or serial consoles can confirm kernel progress. */
-    auto serial_putc = (void (*)(char))0;
-    {
-        static void _serial_putc(char c) {
-            unsigned short port = 0x3f8;
-            __asm__ __volatile__("outb %0, %1" : : "a"(c), "d"(port));
-        }
-        serial_putc = _serial_putc;
-    }
-    serial_putc('K'); serial_putc('M'); serial_putc('A'); serial_putc('I'); serial_putc('N'); serial_putc('\n');
+    /* Tiny serial debug message */
+    serial_puts("KMAIN\n");
 
     gui_init();
     desktop_show_startup_screen("SafeOS 1.0", "Loading system modules...");
