@@ -57,7 +57,7 @@ Adjust the ISO filename if your build outputs a different name. You can also use
 
 ## Contributing
 
-Contributions are welcome. Open issues for bugs or feature requests, and send pull requests for fixes or enhancements. Keep changes focused and small.
+Contributions are welcome. Open issues for bugs or feature requests, and send pull requests for fixes or enhancements. Keep changes focused and small. This project is a side-project and is currently not recognised as an official HouseLearning project. I find this to do in my own free time.
 
 ## License
 
