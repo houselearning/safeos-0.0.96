@@ -1,34 +1,83 @@
-.set MULTIBOOT_MAGIC, 0x1BADB002
-.set MULTIBOOT_FLAGS, 0x00000003
+.set MULTIBOOT_MAGIC,    0x1BADB002
+.set MULTIBOOT_FLAGS,    0x00000003
 .set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
-/* Emit the Multiboot header inside the first loadable section (.text)
-   so it resides within the first 8 KiB of the file and is in a PT_LOAD
-   program header for GRUB to find. */
+# --------------------------------------------------
+# Multiboot header (MUST be early & loadable)
+# --------------------------------------------------
+.section .multiboot
+.align 4
+.long MULTIBOOT_MAGIC
+.long MULTIBOOT_FLAGS
+.long MULTIBOOT_CHECKSUM
+
+# --------------------------------------------------
+# Code
+# --------------------------------------------------
 .section .text
-    .align 4
-    .long MULTIBOOT_MAGIC
-    .long MULTIBOOT_FLAGS
-    .long MULTIBOOT_CHECKSUM
-    .global _start
+.global _start
+.extern kmain
+
 _start:
-    cli
+    cli                         # interrupts OFF
+
+    # Load our own GDT
+    lgdt gdt_descriptor
+
+    # Reload data segments
+    mov $DATA_SEL, %ax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
+    mov %ax, %ss
+
+    # Reload CS via far jump
+    ljmp $CODE_SEL, $flush_cs
+
+flush_cs:
+    # Valid stack AFTER SS is loaded
     mov $stack_top, %esp
-    /* Very early serial tick from assembly so host sees kernel start */
-    mov $0x3f8, %dx
+
+    # Early serial tick (COM1)
+    mov $0x3F8, %dx
     mov $'S', %al
     outb %al, %dx
-    /* Proceed to kernel entry (multiboot registers expected from bootloader) */
-    push %ebx          # multiboot info
-    push %eax          # multiboot magic
+
+    # Multiboot ABI:
+    # eax = magic
+    # ebx = multiboot info pointer
+    push %ebx
+    push %eax
     call kmain
+
 .hang:
     cli
     hlt
     jmp .hang
 
+# --------------------------------------------------
+# Global Descriptor Table
+# --------------------------------------------------
+.section .rodata
+gdt:
+    .quad 0x0000000000000000      # null descriptor
+    .quad 0x00CF9A000000FFFF      # code segment (base=0, limit=4GB)
+    .quad 0x00CF92000000FFFF      # data segment (base=0, limit=4GB)
+gdt_end:
+
+gdt_descriptor:
+    .word gdt_end - gdt - 1
+    .long gdt
+
+.set CODE_SEL, 0x08
+.set DATA_SEL, 0x10
+
+# --------------------------------------------------
+# Stack
+# --------------------------------------------------
 .section .bss
-    .align 16
+.align 16
 stack_bottom:
-    .skip 16384
+    .skip 16384                  # 16 KB stack
 stack_top:

@@ -2,15 +2,13 @@ ENTRY(_start)
 
 SECTIONS
 {
-  .multiboot :
-  {
-    *(.multiboot)
-  }
-
+  /* Kernel load address */
   . = 1M;
 
+  /* Multiboot header MUST be early and loadable */
   .text :
   {
+    KEEP(*(.multiboot))
     *(.text*)
   }
 
@@ -26,7 +24,7 @@ SECTIONS
 
   .bss :
   {
-    *(.bss*)
     *(COMMON)
+    *(.bss*)
   }
 }

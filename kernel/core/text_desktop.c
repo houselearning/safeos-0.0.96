@@ -21,9 +21,11 @@ void text_desktop_run(void) {
     vga_puts(7, 2, "If you see this, the kernel reached the desktop fallback.", 0x07);
     vga_puts(9, 2, "Press Ctrl+Alt to grab/release the mouse in your VM.", 0x07);
 
-    /* Halt here to keep the screen visible */
+    /* Halt here to keep the screen visible. Use `hlt` without `cli`
+       so the guest doesn't disable interrupts then halt (which some
+       hypervisors treat as a shutdown request). */
     for (;;) {
-        __asm__ __volatile__("cli; hlt");
+        __asm__ __volatile__("hlt");
     }
 }
 
