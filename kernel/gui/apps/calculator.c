@@ -1,8 +1,12 @@
 // calculator.c
+// Force recompile
 #include "calculator.h"
 #include "../window.h"
 #include "../gui.h"
 #include "../cursor.h"
+#include <stddef.h>
+#include <./core/string.h>
+#include <./core/stdio.h>
 
 static window_t *win = NULL;
 static char display[32] = "0";
@@ -37,7 +41,7 @@ void calculator_handle_event(gui_event_t *ev) {
     if (ev->type == MOUSE_DOWN && ev->button == 1) {
         int mx = cursor_get_x() - win->x;
         int my = cursor_get_y() - win->y;
-        for (int i = 0; i < NUM_BUTTONS; i++) {
+        for (int i = 0; i < (int)NUM_BUTTONS; i++) {
             if (mx >= buttons[i].x && mx < buttons[i].x + buttons[i].w &&
                 my >= buttons[i].y && my < buttons[i].y + buttons[i].h) {
                 char c = buttons[i].label;
@@ -53,7 +57,7 @@ void calculator_handle_event(gui_event_t *ev) {
                     expr[0] = '\0';
                     expr_len = 0;
                 } else {
-                    if (expr_len < sizeof(expr)-1) {
+                    if (expr_len < (int)(sizeof(expr)-1)) {
                         expr[expr_len++] = c;
                         expr[expr_len] = '\0';
                         strcpy(display, expr);
@@ -72,7 +76,7 @@ void calculator_draw(void) {
     gui_draw_rect(win->x + 10, win->y + 30, 240, 20, 0x000000);
     gui_draw_text(win->x + 15, win->y + 32, display, 0xFFFFFF, 0x000000);
     // draw buttons
-    for (int i = 0; i < NUM_BUTTONS; i++) {
+    for (int i = 0; i < (int)NUM_BUTTONS; i++) {
         gui_draw_rect(win->x + buttons[i].x, win->y + buttons[i].y, buttons[i].w, buttons[i].h, 0xC0C0C0);
         char buf[2] = {buttons[i].label, '\0'};
         gui_draw_text(win->x + buttons[i].x + 20, win->y + buttons[i].y + 15, buf, 0x000000, 0xC0C0C0);

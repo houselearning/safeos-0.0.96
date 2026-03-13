@@ -1,6 +1,7 @@
 #include "e1000.h"
 #include "../pci.h"
 #include "../../arch/x86/io.h"
+#include "../../core/string.h"
 
 #define E1000_NUM_RX_DESC 32
 #define E1000_NUM_TX_DESC 8

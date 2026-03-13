@@ -3,6 +3,7 @@
 #include "../window.h"
 #include "../gui.h"
 #include "../../core/fs.h"
+#include <stddef.h>
 
 static window_t *win = NULL;
 static char buffer[4096];
@@ -21,7 +22,7 @@ void notepad_handle_event(gui_event_t *ev) {
     if (ev->type == KEY_CHAR) {
         if (ev->ch == 8) { // backspace
             if (len > 0) len--;
-        } else if (ev->ch >= 32 && len < sizeof(buffer)-1) {
+        } else if (ev->ch >= 32 && len < (int)(sizeof(buffer)-1)) {
             buffer[len++] = ev->ch;
         }
         buffer[len] = '\0';

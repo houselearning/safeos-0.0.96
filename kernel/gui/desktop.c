@@ -8,6 +8,7 @@
 #include "apps/file_explorer.h"
 #include "apps/browser.h"
 #include "gui.h"
+#include <stddef.h>
 
 static int show_startup = 1;
 
@@ -46,10 +47,10 @@ void desktop_handle_event(gui_event_t *ev) {
     if (ev->type == MOUSE_DOWN && ev->button == 1) { // Left click
         int mx = cursor_get_x();
         int my = cursor_get_y();
-        for (size_t i = 0; i < NUM_ICONS; i++) {
+        for (int i = 0; i < (int)NUM_ICONS; i++) {
             if (mx >= icons[i].x && mx < icons[i].x + icons[i].w &&
                 my >= icons[i].y && my < icons[i].y + icons[i].h) {
-                icons[i].open_func();
+                icons[i].open_func(NULL);
                 break;
             }
         }
@@ -74,7 +75,7 @@ void desktop_draw(void) {
     if (show_startup) return;
     framebuffer_clear(0x202020);
     // draw icons
-    for (size_t i = 0; i < NUM_ICONS; i++) {
+    for (int i = 0; i < (int)NUM_ICONS; i++) {
         gui_draw_rect(icons[i].x, icons[i].y, icons[i].w, icons[i].h, 0x808080);
         gui_draw_text(icons[i].x + 5, icons[i].y + 20, icons[i].name, 0xFFFFFF, 0x808080);
     }
