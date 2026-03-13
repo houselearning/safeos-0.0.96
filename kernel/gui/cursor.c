@@ -25,3 +25,11 @@ void cursor_draw(void) {
         for (int x = 0; x < 8; x++)
             fb_putpixel(cursor_x + x, cursor_y + y, 0xFFFFFF);
 }
+
+int cursor_get_x(void) {
+    return cursor_x;
+}
+
+int cursor_get_y(void) {
+    return cursor_y;
+}

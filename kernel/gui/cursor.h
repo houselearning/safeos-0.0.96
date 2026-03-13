@@ -16,4 +16,8 @@ void cursor_move(int dx, int dy);
 // Draw the cursor on screen
 void cursor_draw(void);
 
+// Get cursor position
+int cursor_get_x(void);
+int cursor_get_y(void);
+
 #endif

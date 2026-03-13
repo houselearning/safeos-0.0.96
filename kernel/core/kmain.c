@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "memory.h"
 #include "paging.h"
+#include "pci.h"
 #include "../gui/gui.h"
 #include "../gui/desktop.h"
 #include "text_desktop.h"
@@ -118,6 +119,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 
     keyboard_init();
     mouse_init();
+    pci_scan();
 
     /* Tiny serial debug message */
     serial_puts("KMAIN\n");
