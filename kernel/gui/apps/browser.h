@@ -6,7 +6,7 @@
 
 
 /* Open a new browser window (new tab behavior) */
-void browser_open(void);
+void browser_open(const char *path);
 
 /* Handle mouse + keyboard events */
 void browser_handle_event(gui_event_t *ev);

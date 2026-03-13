@@ -14,7 +14,7 @@ static int show_startup = 1;
 typedef struct {
     int x, y, w, h;
     const char *name;
-    void (*open_func)(void);
+    void (*open_func)(const char *);
 } icon_t;
 
 static icon_t icons[] = {
@@ -46,7 +46,7 @@ void desktop_handle_event(gui_event_t *ev) {
     if (ev->type == MOUSE_DOWN && ev->button == 1) { // Left click
         int mx = cursor_get_x();
         int my = cursor_get_y();
-        for (int i = 0; i < NUM_ICONS; i++) {
+        for (size_t i = 0; i < NUM_ICONS; i++) {
             if (mx >= icons[i].x && mx < icons[i].x + icons[i].w &&
                 my >= icons[i].y && my < icons[i].y + icons[i].h) {
                 icons[i].open_func();
@@ -74,7 +74,7 @@ void desktop_draw(void) {
     if (show_startup) return;
     framebuffer_clear(0x202020);
     // draw icons
-    for (int i = 0; i < NUM_ICONS; i++) {
+    for (size_t i = 0; i < NUM_ICONS; i++) {
         gui_draw_rect(icons[i].x, icons[i].y, icons[i].w, icons[i].h, 0x808080);
         gui_draw_text(icons[i].x + 5, icons[i].y + 20, icons[i].name, 0xFFFFFF, 0x808080);
     }

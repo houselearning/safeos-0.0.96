@@ -11,7 +11,8 @@ static window_t *win = NULL;
 static char cells[ROWS][COLS][32];
 static int sel_row = 0, sel_col = 0;
 
-void spreadsheet_open(void) {
+void spreadsheet_open(const char *path) {
+    (void)path;
     if (win) return;
     win = window_create("Spreadsheet", 150, 150, 700, 500);
     memset(cells, 0, sizeof(cells));
