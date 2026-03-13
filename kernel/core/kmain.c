@@ -98,29 +98,26 @@ void kmain(unsigned long magic, unsigned long addr) {
                     /* Report framebuffer params over serial */
                     serial_puts("FB: phys=0x"); serial_puthex(physbase); serial_puts(" w="); serial_puthex(width); serial_puts(" h="); serial_puthex(height); serial_puts(" p="); serial_puthex(pitch); serial_puts(" b="); serial_puthex(bpp); serial_putc('\n');
                 } else {
-                    framebuffer_init(1024, 768, 32);
-                    serial_puts("FB: fallback init\n");
+                    serial_puts("FB: invalid VBE, fallback to text\n");
+                    text_desktop_run();
                 }
             } else {
-                framebuffer_init(1024, 768, 32);
+                serial_puts("FB: no mode, fallback to text\n");
+                text_desktop_run();
             }
         } else {
-            serial_puts("MB: no vbe_mode_info pointer; using fallback\n");
-            framebuffer_init(1024, 768, 32);
+            serial_puts("MB: no vbe_mode_info pointer; fallback to text\n");
+            text_desktop_run();
         }
     } else {
-        framebuffer_init(1024, 768, 32);
+        serial_puts("MB: no addr, fallback to text\n");
+        text_desktop_run();
     }
     /* If no usable linear framebuffer was provided (or mapping not available)
        use the simple text-mode desktop fallback which writes to 0xB8000. */
     extern uint8_t* fb_address;
     /* Print framebuffer pointer for debugging */
     serial_puts("FB_ADDRESS=0x"); serial_puthex((uint32_t)(uintptr_t)fb_address); serial_putc('\n');
-    if (!fb_address) {
-        serial_puts("FB: fallback init (no framebuffer)\n");
-        text_desktop_run();
-        /* text_desktop_run does not return */
-    }
 
     keyboard_init();
     mouse_init();
