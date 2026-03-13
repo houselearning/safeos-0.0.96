@@ -25,7 +25,7 @@ void browser_handle_event(gui_event_t *ev) {
     int url_y = win->y + 30;
 
     /* CLICK URL BAR */
-    if (ev->type == GUI_EVENT_MOUSE_DOWN) {
+    if (ev->type == MOUSE_DOWN) {
         if (gui_point_in_rect(ev->x, ev->y, url_x, url_y, 780, 24)) {
             url_focused = 1;
         } else {
@@ -37,7 +37,7 @@ void browser_handle_event(gui_event_t *ev) {
         return;
 
     /* TEXT INPUT */
-    if (ev->type == GUI_EVENT_KEY_CHAR) {
+    if (ev->type == KEY_CHAR) {
         if (url_cursor < (int)sizeof(url) - 1) {
             url[url_cursor++] = ev->ch;
             url[url_cursor] = 0;
@@ -45,15 +45,15 @@ void browser_handle_event(gui_event_t *ev) {
     }
 
     /* SPECIAL KEYS */
-    if (ev->type == GUI_EVENT_KEY_DOWN) {
+    if (ev->type == KEY_DOWN) {
 
         /* BACKSPACE */
-        if (ev->key == GUI_KEY_BACKSPACE && url_cursor > 0) {
+        if (ev->key == 8 && url_cursor > 0) {
             url[--url_cursor] = 0;
         }
 
         /* ENTER → FETCH PAGE */
-        if (ev->key == GUI_KEY_ENTER) {
+        if (ev->key == 13) {
             memset(page, 0, sizeof(page));
             net_http_get(url, page, sizeof(page));
         }
@@ -63,7 +63,7 @@ void browser_handle_event(gui_event_t *ev) {
 void browser_draw(void) {
     if (!win) return;
 
-    window_begin_draw(win);
+    window_draw(win);
 
     int url_x = win->x + 10;
     int url_y = win->y + 30;
@@ -76,14 +76,12 @@ void browser_draw(void) {
         url_y,
         780,
         24,
-        url_focused ? GUI_COLOR_HIGHLIGHT : GUI_COLOR_MENU
+        url_focused ? 0xFFFF00 : 0xC0C0C0
     );
 
-    gui_draw_text(url_x + 6, url_y + 6, url, GUI_COLOR_TEXT);
+    gui_draw_text(url_x + 6, url_y + 6, url, 0x000000, url_focused ? 0xFFFF00 : 0xC0C0C0);
 
     /* PAGE CONTENT (RAW TEXT) */
-    gui_draw_rect(page_x, page_y, 780, 500, GUI_COLOR_BACKGROUND);
-    gui_draw_text(page_x + 6, page_y + 6, page, GUI_COLOR_TEXT);
-
-    window_end_draw(win);
+    gui_draw_rect(page_x, page_y, 780, 500, 0xFFFFFF);
+    gui_draw_text(page_x + 6, page_y + 6, page, 0x000000, 0xFFFFFF);
 }

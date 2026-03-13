@@ -35,10 +35,10 @@ void file_explorer_handle_event(gui_event_t *ev) {
     int list_x = win->x + 10;
     int list_y = win->y + 30;
 
-    if (ev->type == GUI_EVENT_MOUSE_DOWN) {
+    if (ev->type == MOUSE_DOWN) {
 
         /* RIGHT CLICK → OPEN CONTEXT MENU */
-        if (ev->button == GUI_MOUSE_RIGHT) {
+        if (ev->button == 2) { // assume 1 left, 2 right
             context_open = 1;
             context_x = ev->x;
             context_y = ev->y;
@@ -46,7 +46,7 @@ void file_explorer_handle_event(gui_event_t *ev) {
         }
 
         /* LEFT CLICK → SELECT ENTRY */
-        if (ev->button == GUI_MOUSE_LEFT) {
+        if (ev->button == 1) {
             context_open = 0;
 
             for (int i = 0; i < entry_count; i++) {
@@ -62,7 +62,7 @@ void file_explorer_handle_event(gui_event_t *ev) {
     }
 
     /* CONTEXT MENU ACTIONS */
-    if (ev->type == GUI_EVENT_MOUSE_UP && context_open) {
+    if (ev->type == MOUSE_UP && context_open) {
         int nx = context_x;
         int ny = context_y;
 
@@ -89,7 +89,7 @@ void file_explorer_handle_event(gui_event_t *ev) {
 void file_explorer_draw(void) {
     if (!win) return;
 
-    window_begin_draw(win);
+    window_draw(win);
 
     int list_x = win->x + 10;
     int list_y = win->y + 30;
@@ -99,24 +99,23 @@ void file_explorer_draw(void) {
         int y = list_y + i * ROW_HEIGHT;
 
         if (i == selected_index) {
-            gui_draw_rect(list_x, y, 560, ROW_HEIGHT, GUI_COLOR_HIGHLIGHT);
+            gui_draw_rect(list_x, y, 560, ROW_HEIGHT, 0xFFFF00);
         }
 
         gui_draw_text(
             list_x + 6,
             y + 6,
             entries[i].name,
-            GUI_COLOR_TEXT
+            0x000000,
+            i == selected_index ? 0xFFFF00 : 0xFFFFFF
         );
     }
 
     /* CONTEXT MENU */
     if (context_open) {
-        gui_draw_rect(context_x, context_y, CONTEXT_W, CONTEXT_H, GUI_COLOR_MENU);
+        gui_draw_rect(context_x, context_y, CONTEXT_W, CONTEXT_H, 0xC0C0C0);
 
-        gui_draw_text(context_x + 8, context_y + 6, "New File", GUI_COLOR_TEXT);
-        gui_draw_text(context_x + 8, context_y + 30, "Delete File", GUI_COLOR_TEXT);
+        gui_draw_text(context_x + 8, context_y + 6, "New File", 0x000000, 0xC0C0C0);
+        gui_draw_text(context_x + 8, context_y + 30, "Delete File", 0x000000, 0xC0C0C0);
     }
-
-    window_end_draw(win);
 }

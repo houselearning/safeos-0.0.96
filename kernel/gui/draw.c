@@ -13,11 +13,10 @@ void gui_draw_rect(int x, int y, int w, int h, uint32_t color) {
     }
 }
 
-void gui_draw_text(int x, int y, const char *text, uint32_t color) {
-    (void)color;
+void gui_draw_text(int x, int y, const char *text, uint32_t fg, uint32_t bg) {
     int cx = x;
     while (*text) {
-        fb_putchar(cx, y, *text, color, 0);
+        fb_putchar(cx, y, *text, fg, bg);
         cx += 8; // assume 8px glyph width
         text++;
     }

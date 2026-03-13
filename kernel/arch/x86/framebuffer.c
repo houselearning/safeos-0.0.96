@@ -30,3 +30,15 @@ void fb_putpixel(uint32_t x, uint32_t y, uint32_t color) {
     uint32_t* fb = (uint32_t*)fb_address;
     fb[y * (fb_pitch / 4) + x] = color;
 }
+
+void fb_putchar(int x, int y, char c, uint32_t fg, uint32_t bg) {
+    if (!fb_address) return;
+    extern const uint8_t (*current_font)[8];
+    const uint8_t *glyph = current_font[(uint8_t)c];
+    for (int gy = 0; gy < 8; gy++) {
+        for (int gx = 0; gx < 8; gx++) {
+            uint32_t color = (glyph[gy] & (1 << (7 - gx))) ? fg : bg;
+            fb_putpixel(x + gx, y + gy, color);
+        }
+    }
+}
