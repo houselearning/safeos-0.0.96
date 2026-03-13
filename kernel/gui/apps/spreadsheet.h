@@ -5,7 +5,7 @@
 #include "../window.h"
 
 // Open spreadsheet window
-void spreadsheet_open(void);
+void spreadsheet_open(const char *path);
 
 // Handle mouse/keyboard events
 void spreadsheet_handle_event(gui_event_t *ev);

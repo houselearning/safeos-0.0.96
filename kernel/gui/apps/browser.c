@@ -12,7 +12,8 @@ static char page[8192];
 static int url_cursor = 0;
 static int url_focused = 0;
 
-void browser_open(void) {
+void browser_open(const char *path) {
+    (void)path;
     win = window_create("Browser", 200, 100, 800, 600);
     url_cursor = strlen(url);
     page[0] = 0;

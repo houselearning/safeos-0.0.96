@@ -23,7 +23,8 @@ static button_t buttons[] = {
 
 #define NUM_BUTTONS (sizeof(buttons)/sizeof(button_t))
 
-void calculator_open(void) {
+void calculator_open(const char *path) {
+    (void)path;
     if (win) return;
     win = window_create("Calculator", 120, 120, 300, 400);
     strcpy(display, "0");
