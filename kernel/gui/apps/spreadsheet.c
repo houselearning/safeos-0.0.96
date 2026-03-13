@@ -3,6 +3,9 @@
 #include "../window.h"
 #include "../gui.h"
 #include "../cursor.h"
+#include <stddef.h>
+#include <./core/string.h>
+#include <./core/stdio.h>
 
 #define ROWS 16
 #define COLS 8

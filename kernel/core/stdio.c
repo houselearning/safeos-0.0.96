@@ -6,7 +6,7 @@ static void print_char(char **out, char c) {
     (*out)++;
 }
 
-int ksprintf(char *out, const char *fmt, ...) {
+int sprintf(char *out, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -37,12 +37,42 @@ int ksprintf(char *out, const char *fmt, ...) {
     return p - out;
 }
 
-int ksnprintf(char *out, size_t size, const char *fmt, ...) {
+int snprintf(char *out, size_t size, const char *fmt, ...) {
     // simple wrapper — you can expand later
-    return ksprintf(out, fmt);
+    return sprintf(out, fmt);
 }
 
 int kprintf(const char *fmt, ...) {
     // optional: print to serial or framebuffer
     return 0;
+}
+
+int sscanf(const char *str, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int count = 0;
+
+    while (*fmt && *str) {
+        if (*fmt == '%') {
+            fmt++;
+            if (*fmt == 'd') {
+                int *p = va_arg(args, int *);
+                int sign = 1;
+                if (*str == '-') { sign = -1; str++; }
+                *p = 0;
+                while (*str >= '0' && *str <= '9') {
+                    *p = *p * 10 + (*str - '0');
+                    str++;
+                }
+                *p *= sign;
+                count++;
+            }
+        } else if (*fmt == *str) {
+            fmt++; str++;
+        } else {
+            break;
+        }
+    }
+    va_end(args);
+    return count;
 }

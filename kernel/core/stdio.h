@@ -8,7 +8,9 @@
 int kprintf(const char *fmt, ...);
 
 // Minimal snprintf (used by file explorer)
-int ksprintf(char *out, const char *fmt, ...);
-int ksnprintf(char *out, size_t size, const char *fmt, ...);
+int sprintf(char *out, const char *fmt, ...);
+int snprintf(char *out, size_t size, const char *fmt, ...);
+
+int sscanf(const char *str, const char *fmt, ...);
 
 #endif

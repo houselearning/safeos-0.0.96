@@ -11,19 +11,21 @@ LDFLAGS  = -T linker.ld -nostdlib
 
 SRC_C = $(shell find kernel -name '*.c')
 SRC_S = $(shell find kernel -name '*.s')
-OBJ   = $(SRC_C:.c=.o) $(SRC_S:.s=.o)
+OBJ_C = $(SRC_C:.c=.o)
+OBJ_S = $(SRC_S:.s=.ao)
+OBJ   = $(OBJ_C) $(OBJ_S)
 
 all: iso
 
 $(KERNEL): $(OBJ)
 	# Ensure the boot object is linked first so the multiboot header is within
 	# the first 8 KiB of the output file.
-	$(LD) $(LDFLAGS) -o $@ kernel/arch/x86/boot.o $(filter-out kernel/arch/x86/boot.o,$(OBJ))
+	$(LD) $(LDFLAGS) -o $@ kernel/arch/x86/boot.ao $(filter-out kernel/arch/x86/boot.ao,$(OBJ))
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-%.o: %.s
+%.ao: %.s
 	$(AS) $< -o $@
 
 iso: $(KERNEL) grub

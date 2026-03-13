@@ -9,6 +9,8 @@
 #include "../gui/gui.h"
 #include "../gui/desktop.h"
 #include "text_desktop.h"
+#include "fs.h"
+#include "net.h"
 
 /* Simple serial helpers for runtime diagnostics (file-scope) */
 static void serial_putc(char c) {
@@ -42,10 +44,13 @@ void kmain(unsigned long magic, unsigned long addr) {
     /* (serial helpers are file-scope) */
 
     interrupts_init();
+    serial_puts("INTERRUPTS OK\n");
     memory_init();
+    serial_puts("MEMORY OK\n");
     /* Enable an identity 4MB-page mapping so the kernel can access
        physical regions (e.g. framebuffer physbase) directly. */
     paging_enable_identity_4mb();
+    serial_puts("PAGING OK\n");
      /* If the bootloader provided multiboot info, try to extract VBE mode
          information (linear framebuffer address, resolution, pitch, bpp)
          and initialize the framebuffer with the real values. Otherwise
@@ -120,15 +125,20 @@ void kmain(unsigned long magic, unsigned long addr) {
     keyboard_init();
     mouse_init();
     pci_scan();
+    fs_init();
+    net_init();
+    serial_puts("DEVICES OK\n");
 
     /* Tiny serial debug message */
     serial_puts("KMAIN\n");
 
     gui_init();
+    serial_puts("GUI OK\n");
     desktop_show_startup_screen("SafeOS 1.0", "Loading system modules...");
     // simulate loading
     for (int i = 0; i < 10000000; ++i) { __asm__ __volatile__("nop"); }
 
     desktop_init_home();   // icons: Notepad, Calculator, Spreadsheet, Files, Browser
+    serial_puts("DESKTOP OK\n");
     gui_main_loop();       // event loop
 }
