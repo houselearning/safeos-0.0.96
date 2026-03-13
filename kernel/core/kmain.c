@@ -32,16 +32,19 @@ void kmain(unsigned long magic, unsigned long addr) {
     /* Very early serial tick so headless consoles know the kernel started. */
     __asm__ __volatile__("outb %%al, %%dx" :: "a"('!'), "d"((unsigned short)0x3f8));
 
-    /* Log multiboot registers passed by the bootloader */
+    /* Log multiboot registers passed by the bootloader (always print addr) */
     serial_puts("ENTRY: magic=0x"); serial_puthex((uint32_t)magic); serial_puts(" addr=0x"); serial_puthex((uint32_t)addr); serial_putc('\n');
+
+    /* Also print raw addr even if zero to aid debugging */
+    serial_puts("ENTRY_RAW_ADDR=0x"); serial_puthex((uint32_t)addr); serial_putc('\n');
 
     /* (serial helpers are file-scope) */
 
     interrupts_init();
     memory_init();
-     /* Enable an identity 4MB-page mapping so the kernel can access
-         physical regions (e.g. framebuffer physbase) directly. */
-     paging_enable_identity_4mb();
+    /* Enable an identity 4MB-page mapping so the kernel can access
+       physical regions (e.g. framebuffer physbase) directly. */
+    paging_enable_identity_4mb();
      /* If the bootloader provided multiboot info, try to extract VBE mode
          information (linear framebuffer address, resolution, pitch, bpp)
          and initialize the framebuffer with the real values. Otherwise
@@ -105,7 +108,10 @@ void kmain(unsigned long magic, unsigned long addr) {
     /* If no usable linear framebuffer was provided (or mapping not available)
        use the simple text-mode desktop fallback which writes to 0xB8000. */
     extern uint8_t* fb_address;
+    /* Print framebuffer pointer for debugging */
+    serial_puts("FB_ADDRESS=0x"); serial_puthex((uint32_t)(uintptr_t)fb_address); serial_putc('\n');
     if (!fb_address) {
+        serial_puts("FB: fallback init (no framebuffer)\n");
         text_desktop_run();
         /* text_desktop_run does not return */
     }
