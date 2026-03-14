@@ -39,24 +39,14 @@ void browser_handle_event(gui_event_t *ev) {
 
     /* TEXT INPUT */
     if (ev->type == KEY_CHAR) {
-        if (url_cursor < (int)sizeof(url) - 1) {
-            url[url_cursor++] = ev->ch;
-            url[url_cursor] = 0;
-        }
-    }
-
-    /* SPECIAL KEYS */
-    if (ev->type == KEY_DOWN) {
-
-        /* BACKSPACE */
-        if (ev->key == 8 && url_cursor > 0) {
+        if (ev->ch == 8 && url_cursor > 0) {
             url[--url_cursor] = 0;
-        }
-
-        /* ENTER → FETCH PAGE */
-        if (ev->key == 13) {
+        } else if (ev->ch == 13) {
             memset(page, 0, sizeof(page));
             net_http_get(url, page, sizeof(page));
+        } else if (ev->ch >= 32 && url_cursor < (int)sizeof(url) - 1) {
+            url[url_cursor++] = ev->ch;
+            url[url_cursor] = 0;
         }
     }
 }

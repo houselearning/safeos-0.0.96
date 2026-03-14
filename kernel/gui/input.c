@@ -27,10 +27,36 @@ void input_handle_key(uint8_t scancode, int pressed) {
     }
 }
 
-void input_handle_mouse(int dx, int dy, int buttons) {
-    (void)buttons;
+void input_handle_mouse(int dx, int dy) {
     cursor_move(dx, dy);
-    // buttons for later
+}
+
+void input_handle_mouse_buttons(int buttons) {
+    static int last_buttons = 0;
+    int changed = buttons ^ last_buttons;
+    if (changed & 1) { // left
+        gui_event_t ev;
+        ev.type = (buttons & 1) ? MOUSE_DOWN : MOUSE_UP;
+        ev.button = 1;
+        ev.x = cursor_get_x();
+        ev.y = cursor_get_y();
+        if (queue_tail - queue_head < EVENT_QUEUE_SIZE) {
+            event_queue[queue_tail % EVENT_QUEUE_SIZE] = ev;
+            queue_tail++;
+        }
+    }
+    if (changed & 2) { // right
+        gui_event_t ev;
+        ev.type = (buttons & 2) ? MOUSE_DOWN : MOUSE_UP;
+        ev.button = 2;
+        ev.x = cursor_get_x();
+        ev.y = cursor_get_y();
+        if (queue_tail - queue_head < EVENT_QUEUE_SIZE) {
+            event_queue[queue_tail % EVENT_QUEUE_SIZE] = ev;
+            queue_tail++;
+        }
+    }
+    last_buttons = buttons;
 }
 
 void input_dispatch(void) {

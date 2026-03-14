@@ -20,7 +20,7 @@ void text_desktop_run(void) {
     vga_puts(5, 2, "Keyboard and mouse not yet supported in this fallback.", 0x07);
     vga_puts(7, 2, "If you see this, the kernel reached the desktop fallback.", 0x07);
     vga_puts(9, 2, "Press Ctrl+Alt to grab/release the mouse in your VM.", 0x07);
-
+    vga_puts(11, 2, "Think you know the fix? https://github.com/houselearning/safeos-0.0.96", 0x07);
     /* Halt here to keep the screen visible. Use `hlt` without `cli`
        so the guest doesn't disable interrupts then halt (which some
        hypervisors treat as a shutdown request). */

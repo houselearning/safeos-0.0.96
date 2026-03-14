@@ -168,12 +168,8 @@ void irq_handler(uint32_t irq_no) {
     if (irq_no == 1) {
         // Keyboard
         uint8_t scancode = inb(0x60);
-        char c = scancode_to_ascii(scancode);
-        if (c) {
-            // Send to input system
-            extern void input_handle_key(char c);
-            input_handle_key(c);
-        }
+        extern void input_handle_key(uint8_t scancode, int pressed);
+        input_handle_key(scancode, 1); // assume press
     } else if (irq_no == 12) {
         // Mouse
         uint8_t data = inb(0x60);
