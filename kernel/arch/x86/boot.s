@@ -1,5 +1,5 @@
 .set MULTIBOOT_MAGIC,    0x1BADB002
-.set MULTIBOOT_FLAGS,    0x00000003
+.set MULTIBOOT_FLAGS,    0x00000003  # request memory info + video mode
 .set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
 # --------------------------------------------------
@@ -10,6 +10,16 @@
 .long MULTIBOOT_MAGIC
 .long MULTIBOOT_FLAGS
 .long MULTIBOOT_CHECKSUM
+# (Additional fields are only needed if you set the corresponding flags.)
+# .long 0  # header_addr
+# .long 0  # load_addr
+# .long 0  # load_end_addr
+# .long 0  # bss_end_addr
+# .long 0  # entry_addr
+# .long 0  # mode_type: 0 = graphics
+# .long 1024  # width
+# .long 768   # height
+# .long 32    # depth
 
 # --------------------------------------------------
 # Code

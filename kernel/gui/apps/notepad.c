@@ -12,8 +12,12 @@ static int len = 0;
 void notepad_open(const char *path) {
     if (win) return; // already open
     win = window_create("Notepad", 80, 80, 500, 400);
-    len = fs_read_file(path, buffer, sizeof(buffer)-1);
-    if (len < 0) len = 0;
+    if (path) {
+        len = fs_read_file(path, buffer, sizeof(buffer)-1);
+        if (len < 0) len = 0;
+    } else {
+        len = 0;
+    }
     buffer[len] = '\0';
 }
 

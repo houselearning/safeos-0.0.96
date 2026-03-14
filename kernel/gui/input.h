@@ -10,8 +10,11 @@ void input_init(void);
 // Handle raw keyboard scancode
 void input_handle_key(uint8_t scancode, int pressed);
 
-// Handle raw mouse packet (dx, dy, buttons)
-void input_handle_mouse(int dx, int dy, int buttons);
+// Handle raw mouse movement
+void input_handle_mouse(int dx, int dy);
+
+// Handle mouse button changes
+void input_handle_mouse_buttons(int buttons);
 
 // Dispatch queued events to the desktop/window manager
 void input_dispatch(void);

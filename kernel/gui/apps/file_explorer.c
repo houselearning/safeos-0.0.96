@@ -15,7 +15,7 @@ static int context_x, context_y;
 
 #define ROW_HEIGHT 24
 #define CONTEXT_W 120
-#define CONTEXT_H 48
+#define CONTEXT_H 72
 
 static void refresh_entries(void) {
     entry_count = fs_list("A:/", entries, 128);
@@ -66,13 +66,23 @@ void file_explorer_handle_event(gui_event_t *ev) {
         int nx = context_x;
         int ny = context_y;
 
-        /* NEW FILE */
+        /* OPEN FILE */
         if (gui_point_in_rect(ev->x, ev->y, nx, ny, CONTEXT_W, 24)) {
+            if (selected_index >= 0) {
+                char path[128];
+                snprintf(path, sizeof(path), "A:/%s", entries[selected_index].name);
+                extern void notepad_open(const char *path);
+                notepad_open(path);
+            }
+        }
+
+        /* NEW FILE */
+        if (gui_point_in_rect(ev->x, ev->y, nx, ny + 24, CONTEXT_W, 24)) {
             fs_create_file("A:/newfile.txt");
         }
 
         /* DELETE FILE */
-        if (gui_point_in_rect(ev->x, ev->y, nx, ny + 24, CONTEXT_W, 24)) {
+        if (gui_point_in_rect(ev->x, ev->y, nx, ny + 48, CONTEXT_W, 24)) {
             if (selected_index >= 0) {
                 char path[128];
                 snprintf(path, sizeof(path), "A:/%s", entries[selected_index].name);
@@ -115,7 +125,8 @@ void file_explorer_draw(void) {
     if (context_open) {
         gui_draw_rect(context_x, context_y, CONTEXT_W, CONTEXT_H, 0xC0C0C0);
 
-        gui_draw_text(context_x + 8, context_y + 6, "New File", 0x000000, 0xC0C0C0);
-        gui_draw_text(context_x + 8, context_y + 30, "Delete File", 0x000000, 0xC0C0C0);
+        gui_draw_text(context_x + 8, context_y + 6, "Open", 0x000000, 0xC0C0C0);
+        gui_draw_text(context_x + 8, context_y + 30, "New File", 0x000000, 0xC0C0C0);
+        gui_draw_text(context_x + 8, context_y + 54, "Delete File", 0x000000, 0xC0C0C0);
     }
 }

@@ -28,6 +28,36 @@ static void serial_puthex(uint32_t v) {
     }
 }
 
+static void boot_progress(int pct) {
+    /* Draw a small progress bar in the top-left corner if framebuffer is available. */
+    if (fb_address) {
+        int x = 10;
+        int y = 10;
+        int w = 220;
+        int h = 18;
+        gui_draw_rect(x, y, w, h, 0x202020);
+        gui_draw_rect(x+2, y+2, w-4, h-4, 0x404040);
+
+        int steps = 10;
+        int filled = (pct * steps) / 100;
+        for (int i = 0; i < steps; i++) {
+            uint32_t color = (i < filled) ? 0x00FF00 : 0x303030;
+            gui_draw_rect(x+4 + i*( (w-8)/steps ), y+4, (w-8)/steps - 2, h-10, color);
+        }
+
+        char buf[64];
+        if (pct >= 100) {
+            int n = snprintf(buf, sizeof(buf), "Ready");
+            (void)n;
+            gui_draw_text(x+4, y+h+4, buf, 0x00FF00, 0x202020);
+        } else {
+            int n = snprintf(buf, sizeof(buf), "Booting: [%3d%%]", pct);
+            (void)n;
+            gui_draw_text(x+4, y+h+4, buf, 0xFFFFFF, 0x202020);
+        }
+    }
+}
+
 void kmain(unsigned long magic, unsigned long addr) {
     (void)magic;
     (void)addr;
@@ -45,12 +75,18 @@ void kmain(unsigned long magic, unsigned long addr) {
 
     interrupts_init();
     serial_puts("INTERRUPTS OK\n");
+    boot_progress(10);
+
     memory_init();
     serial_puts("MEMORY OK\n");
+    boot_progress(20);
+
     /* Enable an identity 4MB-page mapping so the kernel can access
        physical regions (e.g. framebuffer physbase) directly. */
     paging_enable_identity_4mb();
     serial_puts("PAGING OK\n");
+    boot_progress(30);
+
      /* If the bootloader provided multiboot info, try to extract VBE mode
          information (linear framebuffer address, resolution, pitch, bpp)
          and initialize the framebuffer with the real values. Otherwise
@@ -98,26 +134,30 @@ void kmain(unsigned long magic, unsigned long addr) {
                     /* Report framebuffer params over serial */
                     serial_puts("FB: phys=0x"); serial_puthex(physbase); serial_puts(" w="); serial_puthex(width); serial_puts(" h="); serial_puthex(height); serial_puts(" p="); serial_puthex(pitch); serial_puts(" b="); serial_puthex(bpp); serial_putc('\n');
                 } else {
-                    serial_puts("FB: invalid VBE, fallback to text\n");
-                    text_desktop_run();
+                    serial_puts("FB: invalid VBE\n");
                 }
             } else {
-                serial_puts("FB: no mode, fallback to text\n");
-                text_desktop_run();
+                serial_puts("FB: no mode\n");
             }
         } else {
-            serial_puts("MB: no vbe_mode_info pointer; fallback to text\n");
-            text_desktop_run();
+            serial_puts("MB: no vbe_mode_info pointer\n");
         }
     } else {
-        serial_puts("MB: no addr, fallback to text\n");
-        text_desktop_run();
+        serial_puts("MB: no addr\n");
     }
+
     /* If no usable linear framebuffer was provided (or mapping not available)
-       use the simple text-mode desktop fallback which writes to 0xB8000. */
+       use a conservative fallback address that works in QEMU/GRUB. */
     extern uint8_t* fb_address;
+    if (!fb_address) {
+        /* Common QEMU/GRUB linear framebuffer address for 800x600x32 */
+        fb_init((uint8_t*)0xE0000000, 800, 600, 3200, 32);
+        serial_puts("FB: using fallback address 0xE0000000\n");
+    }
+
     /* Print framebuffer pointer for debugging */
     serial_puts("FB_ADDRESS=0x"); serial_puthex((uint32_t)(uintptr_t)fb_address); serial_putc('\n');
+    boot_progress(40);
 
     keyboard_init();
     mouse_init();
@@ -125,17 +165,22 @@ void kmain(unsigned long magic, unsigned long addr) {
     fs_init();
     net_init();
     serial_puts("DEVICES OK\n");
+    boot_progress(60);
 
     /* Tiny serial debug message */
     serial_puts("KMAIN\n");
 
     gui_init();
     serial_puts("GUI OK\n");
+    boot_progress(80);
+
     desktop_show_startup_screen("SafeOS 1.0", "Loading system modules...");
     // simulate loading
     for (int i = 0; i < 10000000; ++i) { __asm__ __volatile__("nop"); }
 
     desktop_init_home();   // icons: Notepad, Calculator, Spreadsheet, Files, Browser
     serial_puts("DESKTOP OK\n");
+    boot_progress(100);
+
     gui_main_loop();       // event loop
 }

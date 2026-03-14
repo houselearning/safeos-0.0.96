@@ -16,10 +16,28 @@ void fb_init(uint8_t* address, uint32_t width, uint32_t height, uint32_t pitch, 
 
 void fb_clear(uint32_t color) {
     if (!fb_address) return; /* no framebuffer provided by bootloader */
-    uint32_t* fb = (uint32_t*)fb_address;
-    for (uint32_t y = 0; y < fb_height; ++y) {
-        for (uint32_t x = 0; x < fb_width; ++x) {
-            fb[y * (fb_pitch / 4) + x] = color;
+    if (fb_bpp == 32) {
+        uint32_t* fb = (uint32_t*)fb_address;
+        for (uint32_t y = 0; y < fb_height; ++y) {
+            for (uint32_t x = 0; x < fb_width; ++x) {
+                fb[y * (fb_pitch / 4) + x] = color;
+            }
+        }
+    } else if (fb_bpp == 16) {
+        uint16_t* fb = (uint16_t*)fb_address;
+        uint16_t c = color & 0xFFFF;
+        for (uint32_t y = 0; y < fb_height; ++y) {
+            for (uint32_t x = 0; x < fb_width; ++x) {
+                fb[y * (fb_pitch / 2) + x] = c;
+            }
+        }
+    } else if (fb_bpp == 8) {
+        uint8_t* fb = (uint8_t*)fb_address;
+        uint8_t c = color & 0xFF;
+        for (uint32_t y = 0; y < fb_height; ++y) {
+            for (uint32_t x = 0; x < fb_width; ++x) {
+                fb[y * fb_pitch + x] = c;
+            }
         }
     }
 }
@@ -27,8 +45,16 @@ void fb_clear(uint32_t color) {
 void fb_putpixel(uint32_t x, uint32_t y, uint32_t color) {
     if (!fb_address) return;
     if (x >= fb_width || y >= fb_height) return;
-    uint32_t* fb = (uint32_t*)fb_address;
-    fb[y * (fb_pitch / 4) + x] = color;
+    if (fb_bpp == 32) {
+        uint32_t* fb = (uint32_t*)fb_address;
+        fb[y * (fb_pitch / 4) + x] = color;
+    } else if (fb_bpp == 16) {
+        uint16_t* fb = (uint16_t*)fb_address;
+        fb[y * (fb_pitch / 2) + x] = color & 0xFFFF;
+    } else if (fb_bpp == 8) {
+        uint8_t* fb = (uint8_t*)fb_address;
+        fb[y * fb_pitch + x] = color & 0xFF;
+    }
 }
 
 void fb_putchar(int x, int y, char c, uint32_t fg, uint32_t bg) {

@@ -17,6 +17,9 @@ SECTIONS
     *(.rodata*)
   }
 
+  /* Align to page boundary for separate segment */
+  . = ALIGN(4096);
+
   .data :
   {
     *(.data*)

@@ -4,8 +4,6 @@
 
 static int mouse_cycle = 0;
 static uint8_t mouse_packet[3];
-static int8_t mouse_dx = 0, mouse_dy = 0;
-static uint8_t mouse_buttons = 0;
 
 void mouse_init(void) {
     // Enable mouse interrupt
@@ -45,15 +43,7 @@ void mouse_process_packet(uint8_t data) {
         int8_t dx = mouse_packet[1];
         int8_t dy = mouse_packet[2];
 
-        mouse_dx += dx;
-        mouse_dy -= dy; // Y is inverted
-        mouse_buttons = buttons;
-
-        // Send event
-        input_handle_mouse(mouse_dx, mouse_dy, mouse_buttons);
-
-        // Reset deltas
-        mouse_dx = 0;
-        mouse_dy = 0;
+        input_handle_mouse(dx, -dy);
+        input_handle_mouse_buttons(buttons);
     }
 }
