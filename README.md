@@ -41,10 +41,10 @@ If the `Makefile` expects a specific cross-compiler prefix (e.g. `i686-elf-`), s
 
 ## Run (QEMU)
 
-After building, check the `iso/` directory for a generated ISO. Example run command:
+After building, check the `root` directory for a generated ISO. Example run command:
 
 ```sh
-qemu-system-x86_64 -cdrom iso/safeos.iso -m 512 -serial stdio
+qemu-system-x86_64 -cdrom SafeOS-1.0.iso -m 512 -serial stdio
 ```
 
 Adjust the ISO filename if your build outputs a different name. You can also use other emulators or write the ISO to real media at your own risk.
