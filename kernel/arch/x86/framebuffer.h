@@ -29,4 +29,7 @@ void framebuffer_clear(uint32_t color);
 // Draw a character (optional, if you have a font)
 void fb_putchar(int x, int y, char c, uint32_t fg, uint32_t bg);
 
+// Present backbuffer to the hardware framebuffer (if backbuffer in use)
+void fb_present(void);
+
 #endif

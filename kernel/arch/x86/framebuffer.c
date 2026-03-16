@@ -1,4 +1,24 @@
 #include "framebuffer.h"
+/* Use relative paths to core headers so includes resolve when compiling
+    files in arch/x86 directory. */
+#include "../../core/memory.h"
+#include "../../core/string.h"
+#include <stdint.h>
+
+/* Minimal serial helpers for diagnostics (avoid depending on kmain helpers) */
+static void fb_serial_putc(char c) {
+    __asm__ __volatile__("outb %%al, %%dx" :: "a"(c), "d"((unsigned short)0x3f8));
+}
+static void fb_serial_puts(const char *s) {
+    while (*s) fb_serial_putc(*s++);
+}
+static void fb_serial_puthex(uint32_t v) {
+    const char *hex = "0123456789ABCDEF";
+    for (int i = 7; i >= 0; --i) {
+        uint8_t nib = (v >> (i*4)) & 0xF;
+        fb_serial_putc(hex[nib]);
+    }
+}
 
 uint8_t* fb_address = 0;
 uint32_t fb_width = 0;
@@ -6,18 +26,44 @@ uint32_t fb_height = 0;
 uint32_t fb_pitch = 0;
 uint32_t fb_bpp = 0;
 
+static uint32_t *backbuffer = NULL;
+
+static void ensure_backbuffer(void) {
+    if (backbuffer) return;
+    if (fb_width == 0 || fb_height == 0) return;
+    size_t size = (size_t)fb_width * fb_height * 4;
+    backbuffer = (uint32_t *)kmalloc(size);
+    if (backbuffer) {
+        /* clear backbuffer */
+        for (uint32_t i = 0; i < fb_width * fb_height; ++i) backbuffer[i] = 0;
+        fb_serial_puts("FB: backbuffer allocated @ 0x"); fb_serial_puthex((uint32_t)(uintptr_t)backbuffer); fb_serial_puts("\n");
+    } else {
+        fb_serial_puts("FB: backbuffer allocation FAILED\n");
+    }
+}
+
 void fb_init(uint8_t* address, uint32_t width, uint32_t height, uint32_t pitch, uint32_t bpp) {
     fb_address = address;
     fb_width = width;
     fb_height = height;
     fb_pitch = pitch;
     fb_bpp = bpp;
+    /* allocate a backbuffer so GUI renders into RAM first, then we copy */
+    ensure_backbuffer();
+    fb_serial_puts("FB: fb_init addr=0x"); fb_serial_puthex((uint32_t)(uintptr_t)address); fb_serial_puts(" w="); fb_serial_puthex(width); fb_serial_puts(" h="); fb_serial_puthex(height); fb_serial_puts(" p="); fb_serial_puthex(pitch); fb_serial_puts(" b="); fb_serial_puthex(bpp); fb_serial_puts("\n");
 }
 
 void fb_clear(uint32_t color) {
     if (!fb_address) return; /* no framebuffer provided by bootloader */
     
     if (fb_bpp == 32) {
+        /* clear backbuffer if present */
+        if (backbuffer) {
+            uint32_t *b = backbuffer;
+            for (uint32_t i = 0; i < fb_width * fb_height; ++i) b[i] = color;
+            return;
+        }
+
         uint32_t* fb = (uint32_t*)fb_address;
         for (uint32_t y = 0; y < fb_height; ++y) {
             for (uint32_t x = 0; x < fb_width; ++x) {
@@ -48,6 +94,10 @@ void fb_putpixel(uint32_t x, uint32_t y, uint32_t color) {
     if (x >= fb_width || y >= fb_height) return;
     
     if (fb_bpp == 32) {
+        if (backbuffer) {
+            backbuffer[y * fb_width + x] = color;
+            return;
+        }
         uint32_t* fb = (uint32_t*)fb_address;
         fb[y * (fb_pitch / 4) + x] = color;
     } else if (fb_bpp == 16) {
@@ -69,4 +119,15 @@ void fb_putchar(int x, int y, char c, uint32_t fg, uint32_t bg) {
             fb_putpixel(x + gx, y + gy, color);
         }
     }
+}
+
+void fb_present(void) {
+    if (!fb_address || !backbuffer) return;
+    /* Copy per-scanline to respect pitch */
+    for (uint32_t y = 0; y < fb_height; ++y) {
+        uint8_t *dst = fb_address + y * fb_pitch;
+        uint8_t *src = (uint8_t *)(backbuffer + (y * fb_width));
+        memcpy(dst, src, fb_width * 4);
+    }
+    fb_serial_puts("FB: presented\n");
 }

@@ -16,5 +16,7 @@ void gui_main_loop(void) {
         }
         desktop_draw();
         cursor_draw();
+        /* Present rendered backbuffer to the hardware framebuffer */
+        fb_present();
     }
 }

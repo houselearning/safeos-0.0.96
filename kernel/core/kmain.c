@@ -3,6 +3,7 @@
 #include "../arch/x86/mouse.h"
 #include "../arch/x86/framebuffer.h"
 #include <stdint.h>
+#include "stdio.h"
 #include "memory.h"
 #include "paging.h"
 #include "pci.h"
@@ -77,43 +78,26 @@ static void boot_progress(int pct) {
     }
 }
 
-/* Diagnostic: cycle through common LFB candidate addresses and draw full-screen
-   solid colors so the user can see which address is actually mapped to the display. */
-static void lfb_test_sequence(void) {
-    /* Helper: raw fill a physical address region with 32-bit color.
-       This writes directly to the candidate physical address and does
-       not depend on fb_init/fb_address state so it's useful for testing. */
-    void raw_fill_impl(uint32_t addr, uint32_t w, uint32_t h, uint32_t color) {
-        volatile uint32_t *p = (volatile uint32_t *)(uintptr_t)addr;
-        uint32_t pixels = w * h;
-        for (uint32_t i = 0; i < pixels; ++i) p[i] = color;
-    }
+/* LFB raw test removed — use forced framebuffer address instead. */
 
-    /* Helper: write a short VGA text string to 0xB8000 (classic text mode) */
-    void write_vga_text(const char *s) {
-        volatile uint16_t *vga = (volatile uint16_t *)(uintptr_t)0xB8000;
-        uint16_t attr = (0x0F << 8); /* white on black */
-        for (int i = 0; s[i] && i < 80; ++i) {
-            vga[i] = (uint16_t)(s[i]) | attr;
+/* Quick physical-LFB diagnostic: write a small 64x64 checker directly
+   to the physical framebuffer address (bypasses any backbuffer) so
+   we can verify the emulator displays the physical region. */
+static void phys_write_test(uint32_t phys) {
+    if (!phys) {
+        serial_puts("PHYS_TEST: no phys\n");
+        return;
+    }
+    serial_puts("PHYS_TEST: writing test to 0x"); serial_puthex(phys); serial_putc('\n');
+    volatile uint32_t *p = (volatile uint32_t *)(uintptr_t)phys;
+    uint32_t stride = fb_pitch ? (fb_pitch / 4) : fb_width;
+    for (uint32_t y = 0; y < 64 && y < fb_height; ++y) {
+        for (uint32_t x = 0; x < 64 && x < fb_width; ++x) {
+            uint32_t color = (((x/8) ^ (y/8)) & 1) ? 0x00FF00FF : 0x0000FF00;
+            p[y * stride + x] = color;
         }
     }
-
-    uint32_t candidates[] = { 0x00300000u, 0x01000000u, 0xE0000000u, 0xFD000000u };
-    uint32_t colors[] = { 0x00AA0000u, 0x0000AA00u, 0x000000AAu, 0x00AAAA00u };
-
-    for (int i = 0; i < (int)(sizeof(candidates)/sizeof(candidates[0])); ++i) {
-        uint32_t addr = candidates[i];
-        serial_puts("LFB RAW TEST: trying 0x"); serial_puthex(addr); serial_putc('\n');
-        /* Fill the full 1024x768 region with a solid color at the raw phys addr */
-        raw_fill_impl(addr, 1024, 768, colors[i]);
-        /* Also write a VGA-text banner so text-mode-visible displays show something */
-        write_vga_text("SafeOS VGA TEXT TEST - LOOK FOR COLOR / MSG");
-
-        /* Longish delay so the user can visually inspect the VM window */
-        for (volatile uint32_t d = 0; d < 12000000u; ++d) { __asm__ __volatile__("nop"); }
-    }
-
-    serial_puts("LFB RAW TEST: done\n");
+    serial_puts("PHYS_TEST: done\n");
 }
 
 void kmain(unsigned long magic, unsigned long addr) {
@@ -145,18 +129,11 @@ void kmain(unsigned long magic, unsigned long addr) {
     serial_puts("PAGING OK\n");
      boot_progress(30);
 
-     /* Quick LFB diagnostics to help identify which physical address
-         the VM maps as the display framebuffer. Draws colored screens. */
-     lfb_test_sequence();
+     /* Quick LFB diagnostics removed; we force known-good framebuffer below. */
 
-    /* Force the framebuffer to the known-good address discovered during
-       debugging (QEMU visible LFB). This overrides unreliable VBE info
-       from some boot environments and ensures GUI draws where visible. */
-    {
-        uint32_t known_fb = 0x00300000u;
-        fb_init((uint8_t *)(uintptr_t)known_fb, 1024, 768, 1024 * 4, 32);
-        serial_puts("FB: forced to 0x"); serial_puthex(known_fb); serial_puts(" (1024x768x32)\n");
-    }
+     /* Do not force a framebuffer yet — prefer bootloader-provided VBE
+         information when available. We will fall back later to a safe
+         identity-mapped framebuffer if needed. */
 
      /* If the bootloader provided multiboot info, try to extract VBE mode
          information (linear framebuffer address, resolution, pitch, bpp)
@@ -205,20 +182,24 @@ void kmain(unsigned long magic, unsigned long addr) {
                 serial_puts(" h=0x"); serial_puthex(height); serial_puts(" b=0x"); serial_puthex(bpp); 
                 serial_puts(" phys=0x"); serial_puthex(physbase); serial_putc('\n');
                 
-                /* Check if bootloader provided valid graphics framebuffer */
-                if (physbase && width > 80 && height > 25 && bpp) {
+                /* Validate VBE values conservatively before trusting them.
+                   Require reasonable resolution and supported bpp, and ensure
+                   pitch is at least width*(bpp/8). */
+                int bytes_per_pixel = (bpp + 7) / 8;
+                uint32_t min_pitch = (uint32_t)width * (uint32_t)bytes_per_pixel;
+                if (physbase && width >= 320 && height >= 200 && (bpp == 8 || bpp == 16 || bpp == 24 || bpp == 32) && pitch >= min_pitch) {
                     fb_init((uint8_t *)(uintptr_t)physbase, width, height, pitch, bpp);
                     serial_puts("FB: using VBE phys=0x"); serial_puthex(physbase); serial_puts(" w="); serial_puthex(width); serial_puts(" h="); serial_puthex(height); serial_puts(" p="); serial_puthex(pitch); serial_puts(" b="); serial_puthex(bpp); serial_putc('\n');
                 } else {
-                          /* Bootloader is in text mode or no valid VBE info - use a safe identity-mapped framebuffer
-                              Use a lower memory region that is known to be writable and visible in QEMU */
-                          uint32_t graphics_lfb = 0x00300000;
+                    /* Bootloader is in text mode or no valid VBE info - use a safe identity-mapped framebuffer
+                       Use a lower memory region that is known to be writable and visible in QEMU */
+                    uint32_t graphics_lfb = 0x00300000;
                     uint16_t gfx_w = 1024;
                     uint16_t gfx_h = 768;
                     uint16_t gfx_p = gfx_w * 4;  /* 32-bit pixels */
                     uint8_t gfx_b = 32;
                     fb_init((uint8_t *)(uintptr_t)graphics_lfb, gfx_w, gfx_h, gfx_p, gfx_b);
-                    serial_puts("FB: using QEMU graphics LFB at 0x"); serial_puthex(graphics_lfb); 
+                    serial_puts("FB: using QEMU graphics LFB at 0x"); serial_puthex(graphics_lfb);
                     serial_puts(" (1024x768x32)\n");
                 }
             } else {
@@ -245,6 +226,8 @@ void kmain(unsigned long magic, unsigned long addr) {
     /* Print framebuffer pointer for debugging */
     serial_puts("FB_ADDRESS=0x"); serial_puthex((uint32_t)(uintptr_t)fb_address); serial_putc('\n');
     boot_progress(40);
+
+    phys_write_test((uint32_t)(uintptr_t)fb_address);
 
     keyboard_init();
     mouse_init();

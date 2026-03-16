@@ -1,7 +1,7 @@
 #include "memory.h"
 
 #define HEAP_START 0x400000  // 4MB
-#define HEAP_SIZE  0x100000  // 1MB heap
+#define HEAP_SIZE  0x400000  // 4MB heap (increased to allow large backbuffer allocations)
 
 typedef struct block {
     size_t size;

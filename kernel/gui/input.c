@@ -17,6 +17,12 @@ void input_init(void) {
 void input_handle_key(uint8_t scancode, int pressed) {
     if (pressed) {
         char c = scancode_to_ascii(scancode);
+        /* Toggle cursor visibility with 'c' key */
+        if (c == 'c') {
+            cursor_toggle();
+            return;
+        }
+
         if (c && queue_tail - queue_head < EVENT_QUEUE_SIZE) {
             gui_event_t ev;
             ev.type = KEY_CHAR;

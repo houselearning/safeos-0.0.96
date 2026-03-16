@@ -17,6 +17,14 @@ OBJ   = $(OBJ_C) $(OBJ_S)
 
 all: iso
 
+disk:
+	@mkdir -p build
+	./scripts/create_disk.sh safeos_disk.img 1G
+
+install-disk: $(KERNEL) disk
+	@echo "Installing kernel to disk image (non-bootable)."
+	./scripts/install_to_disk.sh safeos_disk.img $(KERNEL)
+
 $(KERNEL): $(OBJ)
 	# Ensure the boot object is linked first so the multiboot header is within
 	# the first 8 KiB of the output file.

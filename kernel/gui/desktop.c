@@ -74,25 +74,25 @@ void desktop_handle_event(gui_event_t *ev) {
 void desktop_draw(void) {
     if (show_startup) return;
 
-    /* Clear to dark background */
-    framebuffer_clear(0x101010);
+    /* Windows 2.0 style desktop: teal background, icons with labels,
+       and a bottom taskbar with a Start button. */
+    framebuffer_clear(0x008080); /* teal */
 
-    /* Test pattern: four large colored rectangles to verify framebuffer */
-    int w = fb_width / 2;
-    int h = fb_height / 2;
-    /* Top-left: red */
-    gui_draw_rect(0, 0, w, h, 0xFF0000);
-    /* Top-right: green */
-    gui_draw_rect(w, 0, w, h, 0x00FF00);
-    /* Bottom-left: blue */
-    gui_draw_rect(0, h, w, h, 0x0000FF);
-    /* Bottom-right: yellow */
-    gui_draw_rect(w, h, w, h, 0xFFFF00);
-
-    /* After visual test, draw icons normally */
+    /* Draw icons: simple 3D-ish boxes with label */
     for (int i = 0; i < (int)NUM_ICONS; i++) {
-        gui_draw_rect(icons[i].x, icons[i].y, icons[i].w, icons[i].h, 0x808080);
-        gui_draw_text(icons[i].x + 5, icons[i].y + 20, icons[i].name, 0xFFFFFF, 0x808080);
+        int x = icons[i].x;
+        int y = icons[i].y;
+        int w = icons[i].w;
+        int h = icons[i].h;
+        /* icon background */
+        gui_draw_rect(x, y, w, h, 0xC0C0C0);
+        /* 3D border: top-left dark, bottom-right light */
+        gui_draw_rect(x, y, w, 1, 0x808080);
+        gui_draw_rect(x, y, 1, h, 0x808080);
+        gui_draw_rect(x + w - 1, y, 1, h, 0xFFFFFF);
+        gui_draw_rect(x, y + h - 1, w, 1, 0xFFFFFF);
+        /* label centered below icon */
+        gui_draw_text(x + 6, y + h + 8, icons[i].name, 0x000000, 0xC0C0C0);
     }
     // draw apps
     extern void notepad_draw(void);
@@ -105,4 +105,11 @@ void desktop_draw(void) {
     file_explorer_draw();
     extern void browser_draw(void);
     browser_draw();
+
+    /* Bottom taskbar */
+    int taskbar_h = 28;
+    gui_draw_rect(0, fb_height - taskbar_h, fb_width, taskbar_h, 0x303030);
+    /* Start button */
+    gui_draw_rect(6, fb_height - taskbar_h + 4, 80, taskbar_h - 8, 0xC0C0C0);
+    gui_draw_text(14, fb_height - taskbar_h + 10, "Start", 0x000000, 0xC0C0C0);
 }

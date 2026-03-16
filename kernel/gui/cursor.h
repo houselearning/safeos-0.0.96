@@ -20,4 +20,9 @@ void cursor_draw(void);
 int cursor_get_x(void);
 int cursor_get_y(void);
 
+/* Visibility control */
+void cursor_hide(void);
+void cursor_show(void);
+void cursor_toggle(void);
+
 #endif
