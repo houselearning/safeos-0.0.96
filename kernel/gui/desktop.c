@@ -73,8 +73,23 @@ void desktop_handle_event(gui_event_t *ev) {
 
 void desktop_draw(void) {
     if (show_startup) return;
-    framebuffer_clear(0x202020);
-    // draw icons
+
+    /* Clear to dark background */
+    framebuffer_clear(0x101010);
+
+    /* Test pattern: four large colored rectangles to verify framebuffer */
+    int w = fb_width / 2;
+    int h = fb_height / 2;
+    /* Top-left: red */
+    gui_draw_rect(0, 0, w, h, 0xFF0000);
+    /* Top-right: green */
+    gui_draw_rect(w, 0, w, h, 0x00FF00);
+    /* Bottom-left: blue */
+    gui_draw_rect(0, h, w, h, 0x0000FF);
+    /* Bottom-right: yellow */
+    gui_draw_rect(w, h, w, h, 0xFFFF00);
+
+    /* After visual test, draw icons normally */
     for (int i = 0; i < (int)NUM_ICONS; i++) {
         gui_draw_rect(icons[i].x, icons[i].y, icons[i].w, icons[i].h, 0x808080);
         gui_draw_text(icons[i].x + 5, icons[i].y + 20, icons[i].name, 0xFFFFFF, 0x808080);

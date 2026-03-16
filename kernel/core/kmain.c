@@ -28,34 +28,92 @@ static void serial_puthex(uint32_t v) {
     }
 }
 
+/* Boot timing */
+static uint32_t boot_start_time = 0;
+
 static void boot_progress(int pct) {
-    /* Draw a small progress bar in the top-left corner if framebuffer is available. */
+    /* Draw progress bar in bottom-left corner if framebuffer is available. */
     if (fb_address) {
-        int x = 10;
-        int y = 10;
-        int w = 220;
-        int h = 18;
-        gui_draw_rect(x, y, w, h, 0x202020);
-        gui_draw_rect(x+2, y+2, w-4, h-4, 0x404040);
-
-        int steps = 10;
-        int filled = (pct * steps) / 100;
-        for (int i = 0; i < steps; i++) {
-            uint32_t color = (i < filled) ? 0x00FF00 : 0x303030;
-            gui_draw_rect(x+4 + i*( (w-8)/steps ), y+4, (w-8)/steps - 2, h-10, color);
-        }
-
-        char buf[64];
+        /* Position in bottom-left corner */
+        int x = 20;
+        int y = fb_height - 60;  /* 60 pixels from bottom */
+        int bar_width = 12;      /* Width of progress bar area */
+        int bar_height = 10;     /* Height of each progress segment */
+        
+        /* Clear previous progress bar area */
+        gui_draw_rect(x-5, y-5, bar_width + 20, bar_height + 40, 0x000000);
+        
         if (pct >= 100) {
-            int n = snprintf(buf, sizeof(buf), "Ready");
-            (void)n;
-            gui_draw_text(x+4, y+h+4, buf, 0x00FF00, 0x202020);
-        } else {
-            int n = snprintf(buf, sizeof(buf), "Booting: [%3d%%]", pct);
-            (void)n;
-            gui_draw_text(x+4, y+h+4, buf, 0xFFFFFF, 0x202020);
+            /* Hide progress bar when done */
+            return;
+        }
+        
+        /* Draw border with @ symbols */
+        gui_draw_text(x-2, y-2, "@@@@@@@@@@@@", 0xFFFFFF, 0x000000);
+        gui_draw_text(x-2, y+bar_height*10, "@@@@@@@@@@@@", 0xFFFFFF, 0x000000);
+        
+        /* Draw side borders */
+        for (int i = 0; i < 10; i++) {
+            gui_draw_text(x-2, y + i*bar_height, "@", 0xFFFFFF, 0x000000);
+            gui_draw_text(x-2 + 10*8, y + i*bar_height, "@", 0xFFFFFF, 0x000000);
+        }
+        
+        /* Fill progress with % symbols */
+        int filled_segments = (pct * 10) / 100;
+        for (int i = 0; i < 10; i++) {
+            uint32_t bg_color = (i < filled_segments) ? 0x00AA00 : 0x333333;
+            gui_draw_rect(x, y + i*bar_height, bar_width, bar_height, bg_color);
+            
+            /* Draw % symbol in each segment */
+            char percent = '%';
+            gui_draw_text(x + 2, y + i*bar_height + 1, &percent, 0xFFFFFF, bg_color);
+        }
+        
+        /* Draw percentage and timing text below */
+        char buf[64];
+        int n = snprintf(buf, sizeof(buf), "%3d%% Booting", pct);
+        (void)n;
+        gui_draw_text(x-2, y + bar_height*10 + 8, buf, 0xFFFFFF, 0x000000);
+    }
+}
+
+/* Diagnostic: cycle through common LFB candidate addresses and draw full-screen
+   solid colors so the user can see which address is actually mapped to the display. */
+static void lfb_test_sequence(void) {
+    /* Helper: raw fill a physical address region with 32-bit color.
+       This writes directly to the candidate physical address and does
+       not depend on fb_init/fb_address state so it's useful for testing. */
+    void raw_fill_impl(uint32_t addr, uint32_t w, uint32_t h, uint32_t color) {
+        volatile uint32_t *p = (volatile uint32_t *)(uintptr_t)addr;
+        uint32_t pixels = w * h;
+        for (uint32_t i = 0; i < pixels; ++i) p[i] = color;
+    }
+
+    /* Helper: write a short VGA text string to 0xB8000 (classic text mode) */
+    void write_vga_text(const char *s) {
+        volatile uint16_t *vga = (volatile uint16_t *)(uintptr_t)0xB8000;
+        uint16_t attr = (0x0F << 8); /* white on black */
+        for (int i = 0; s[i] && i < 80; ++i) {
+            vga[i] = (uint16_t)(s[i]) | attr;
         }
     }
+
+    uint32_t candidates[] = { 0x00300000u, 0x01000000u, 0xE0000000u, 0xFD000000u };
+    uint32_t colors[] = { 0x00AA0000u, 0x0000AA00u, 0x000000AAu, 0x00AAAA00u };
+
+    for (int i = 0; i < (int)(sizeof(candidates)/sizeof(candidates[0])); ++i) {
+        uint32_t addr = candidates[i];
+        serial_puts("LFB RAW TEST: trying 0x"); serial_puthex(addr); serial_putc('\n');
+        /* Fill the full 1024x768 region with a solid color at the raw phys addr */
+        raw_fill_impl(addr, 1024, 768, colors[i]);
+        /* Also write a VGA-text banner so text-mode-visible displays show something */
+        write_vga_text("SafeOS VGA TEXT TEST - LOOK FOR COLOR / MSG");
+
+        /* Longish delay so the user can visually inspect the VM window */
+        for (volatile uint32_t d = 0; d < 12000000u; ++d) { __asm__ __volatile__("nop"); }
+    }
+
+    serial_puts("LFB RAW TEST: done\n");
 }
 
 void kmain(unsigned long magic, unsigned long addr) {
@@ -85,7 +143,20 @@ void kmain(unsigned long magic, unsigned long addr) {
        physical regions (e.g. framebuffer physbase) directly. */
     paging_enable_identity_4mb();
     serial_puts("PAGING OK\n");
-    boot_progress(30);
+     boot_progress(30);
+
+     /* Quick LFB diagnostics to help identify which physical address
+         the VM maps as the display framebuffer. Draws colored screens. */
+     lfb_test_sequence();
+
+    /* Force the framebuffer to the known-good address discovered during
+       debugging (QEMU visible LFB). This overrides unreliable VBE info
+       from some boot environments and ensures GUI draws where visible. */
+    {
+        uint32_t known_fb = 0x00300000u;
+        fb_init((uint8_t *)(uintptr_t)known_fb, 1024, 768, 1024 * 4, 32);
+        serial_puts("FB: forced to 0x"); serial_puthex(known_fb); serial_puts(" (1024x768x32)\n");
+    }
 
      /* If the bootloader provided multiboot info, try to extract VBE mode
          information (linear framebuffer address, resolution, pitch, bpp)
@@ -129,15 +200,29 @@ void kmain(unsigned long magic, unsigned long addr) {
                 uint16_t height = *(uint16_t *)(mode + 0x14);
                 uint8_t bpp = *(uint8_t *)(mode + 0x19);
                 uint32_t physbase = *(uint32_t *)(mode + 0x28);
-                if (physbase && width && height && bpp) {
+                
+                serial_puts("FB: VBE raw - p=0x"); serial_puthex(pitch); serial_puts(" w=0x"); serial_puthex(width); 
+                serial_puts(" h=0x"); serial_puthex(height); serial_puts(" b=0x"); serial_puthex(bpp); 
+                serial_puts(" phys=0x"); serial_puthex(physbase); serial_putc('\n');
+                
+                /* Check if bootloader provided valid graphics framebuffer */
+                if (physbase && width > 80 && height > 25 && bpp) {
                     fb_init((uint8_t *)(uintptr_t)physbase, width, height, pitch, bpp);
-                    /* Report framebuffer params over serial */
-                    serial_puts("FB: phys=0x"); serial_puthex(physbase); serial_puts(" w="); serial_puthex(width); serial_puts(" h="); serial_puthex(height); serial_puts(" p="); serial_puthex(pitch); serial_puts(" b="); serial_puthex(bpp); serial_putc('\n');
+                    serial_puts("FB: using VBE phys=0x"); serial_puthex(physbase); serial_puts(" w="); serial_puthex(width); serial_puts(" h="); serial_puthex(height); serial_puts(" p="); serial_puthex(pitch); serial_puts(" b="); serial_puthex(bpp); serial_putc('\n');
                 } else {
-                    serial_puts("FB: invalid VBE\n");
+                          /* Bootloader is in text mode or no valid VBE info - use a safe identity-mapped framebuffer
+                              Use a lower memory region that is known to be writable and visible in QEMU */
+                          uint32_t graphics_lfb = 0x00300000;
+                    uint16_t gfx_w = 1024;
+                    uint16_t gfx_h = 768;
+                    uint16_t gfx_p = gfx_w * 4;  /* 32-bit pixels */
+                    uint8_t gfx_b = 32;
+                    fb_init((uint8_t *)(uintptr_t)graphics_lfb, gfx_w, gfx_h, gfx_p, gfx_b);
+                    serial_puts("FB: using QEMU graphics LFB at 0x"); serial_puthex(graphics_lfb); 
+                    serial_puts(" (1024x768x32)\n");
                 }
             } else {
-                serial_puts("FB: no mode\n");
+                serial_puts("FB: no mode ptr\n");
             }
         } else {
             serial_puts("MB: no vbe_mode_info pointer\n");
@@ -147,12 +232,14 @@ void kmain(unsigned long magic, unsigned long addr) {
     }
 
     /* If no usable linear framebuffer was provided (or mapping not available)
-       use a conservative fallback address that works in QEMU/GRUB. */
+       use graphics framebuffer at common QEMU/VGA locations */
     extern uint8_t* fb_address;
     if (!fb_address) {
-        /* Common QEMU/GRUB linear framebuffer address for 800x600x32 */
-        fb_init((uint8_t*)0x01000000, 800, 600, 3200, 32);
-        serial_puts("FB: using fallback address 0x01000000\n");
+        /* Fall back to an identity-mapped framebuffer in low memory that QEMU shows reliably */
+        uint32_t graphics_fb = 0x00300000;
+        fb_init((uint8_t *)(uintptr_t)graphics_fb, 1024, 768, 1024 * 4, 32);
+        serial_puts("FB: using fallback framebuffer at 0x"); serial_puthex(graphics_fb);
+        serial_puts(" (1024x768x32)\n");
     }
 
     /* Print framebuffer pointer for debugging */
@@ -161,7 +248,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 
     keyboard_init();
     mouse_init();
-    pci_scan();
+    // pci_scan(); // Temporarily disabled - causes page fault on unmapped MMIO
     fs_init();
     net_init();
     serial_puts("DEVICES OK\n");
@@ -174,13 +261,13 @@ void kmain(unsigned long magic, unsigned long addr) {
     serial_puts("GUI OK\n");
     boot_progress(80);
 
-    desktop_show_startup_screen("SafeOS 1.0", "Loading system modules...");
-    // simulate loading
-    for (int i = 0; i < 10000000; ++i) { __asm__ __volatile__("nop"); }
-
-    desktop_init_home();   // icons: Notepad, Calculator, Spreadsheet, Files, Browser
+    /* Skip startup screen - go straight to desktop */
+    desktop_init_home();
     serial_puts("DESKTOP OK\n");
-    boot_progress(100);
+    boot_progress(100);  /* Hide progress bar */
+    
+    /* Clear screen to dark gray background */
+    framebuffer_clear(0x202020);
 
-    gui_main_loop();       // event loop
+    gui_main_loop();       // event loop - displays desktop with icons
 }
