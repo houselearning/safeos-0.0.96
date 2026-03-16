@@ -151,8 +151,8 @@ void kmain(unsigned long magic, unsigned long addr) {
     extern uint8_t* fb_address;
     if (!fb_address) {
         /* Common QEMU/GRUB linear framebuffer address for 800x600x32 */
-        fb_init((uint8_t*)0xE0000000, 800, 600, 3200, 32);
-        serial_puts("FB: using fallback address 0xE0000000\n");
+        fb_init((uint8_t*)0x01000000, 800, 600, 3200, 32);
+        serial_puts("FB: using fallback address 0x01000000\n");
     }
 
     /* Print framebuffer pointer for debugging */
