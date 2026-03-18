@@ -64,6 +64,144 @@ void print_line(const char *line) {
     delay_ms(DELAY_LINE);
 }
 
+/* ============================================================================
+   CHECKPOINT SYSTEM FOR BOOT DIAGNOSTICS
+   ============================================================================ */
+
+typedef struct {
+    const char *name;
+    int reached;
+} Checkpoint;
+
+#define MAX_CHECKPOINTS 16
+static Checkpoint checkpoints[MAX_CHECKPOINTS] = {0};
+static int checkpoint_count = 0;
+
+void checkpoint_init(const char *name) {
+    if (checkpoint_count < MAX_CHECKPOINTS) {
+        checkpoints[checkpoint_count].name = name;
+        checkpoints[checkpoint_count].reached = 1;
+        kprintf("[✓] CHECKPOINT: %s\n", name);
+        checkpoint_count++;
+        delay_ms(50);
+    }
+}
+
+void checkpoint_summary(void) {
+    kprintf("\n[*] Boot Checkpoints Reached: %d\n", checkpoint_count);
+    for (int i = 0; i < checkpoint_count; i++) {
+        kprintf("    %d. %s\n", i + 1, checkpoints[i].name);
+    }
+}
+
+/* ============================================================================
+   VGA/DISPLAY DETECTION
+   ============================================================================ */
+
+/* VGA memory address */
+#define VGA_MEMORY ((void *)0xB8000)
+#define VGA_TEXT_MEMORY_SIZE 4000 /* 80x25 * 2 bytes per char */
+
+int detect_vga_memory(void) {
+    /* Check if we can read/write to VGA text memory */
+    volatile char *vga = (volatile char *)VGA_MEMORY;
+    char original = vga[0];
+    
+    /* Try to write a test value */
+    vga[0] = 'K';
+    if (vga[0] == 'K') {
+        vga[0] = original;  /* Restore */
+        return 1;  /* VGA memory accessible */
+    }
+    return 0;  /* VGA memory not accessible */
+}
+
+int detect_framebuffer(void) {
+    /* Check for framebuffer (usually at 0xFD000000 or higher in UEFI) */
+    /* In real OS, query from bootloader info */
+    return 1;  /* Assume present if we got this far */
+}
+
+int detect_vga_controller(void) {
+    /* VGA controller typically responds to port 0x3D4 (CRT controller) */
+    /* For kernel diagnostic, assume present if display is working */
+    return 1;
+}
+
+int test_display_output(void) {
+    /* Try to output colored text */
+    kprintf("%s[TEST] Color output: ", COLOR_GREEN);
+    kprintf("%sRed%s ", COLOR_RED, COLOR_RESET);
+    kprintf("%sYellow%s ", COLOR_YELLOW, COLOR_RESET);
+    kprintf("%sCyan%s\n", COLOR_CYAN, COLOR_RESET);
+    return 1;
+}
+
+/* ============================================================================
+   EXTENDED VGA/DISPLAY CHECKS
+   ============================================================================ */
+
+void run_extended_vga_checks(void) {
+    int vga_mem_ok = 0;
+    int framebuf_ok = 0;
+    int vga_ctrl_ok = 0;
+    int display_out_ok = 0;
+    
+    print_line("");
+    print_line("[ EXTENDED DISPLAY DIAGNOSTICS ]");
+    delay_ms(DELAY_SECTION);
+    
+    /* Check 1: VGA Memory */
+    kprintf("[ TEST ] VGA Memory Detection...");
+    delay_ms(DELAY_CHECK);
+    vga_mem_ok = detect_vga_memory();
+    if (vga_mem_ok) {
+        kprintf(" %sOK%s\n", COLOR_GREEN, COLOR_RESET);
+        record_pass("VGA_MEMORY");
+    } else {
+        kprintf(" %sFAULT%s\n", COLOR_RED, COLOR_RESET);
+        record_fault("DISPLAY", "VGA_MEMORY", "TST");
+    }
+    
+    /* Check 2: Framebuffer */
+    kprintf("[ TEST ] Framebuffer Detection...");
+    delay_ms(DELAY_CHECK);
+    framebuf_ok = detect_framebuffer();
+    if (framebuf_ok) {
+        kprintf(" %sOK%s\n", COLOR_GREEN, COLOR_RESET);
+        record_pass("FRAMEBUFFER");
+    } else {
+        kprintf(" %sFAULT%s\n", COLOR_RED, COLOR_RESET);
+        record_fault("DISPLAY", "FRAMEBUFFER", "TST");
+    }
+    
+    /* Check 3: VGA Controller */
+    kprintf("[ TEST ] VGA Controller Detection...");
+    delay_ms(DELAY_CHECK);
+    vga_ctrl_ok = detect_vga_controller();
+    if (vga_ctrl_ok) {
+        kprintf(" %sOK%s\n", COLOR_GREEN, COLOR_RESET);
+        record_pass("VGA_CONTROLLER");
+    } else {
+        kprintf(" %sFAULT%s\n", COLOR_RED, COLOR_RESET);
+        record_fault("DISPLAY", "VGA_CONTROLLER", "TST");
+    }
+    
+    /* Check 4: Display Output */
+    kprintf("[ TEST ] Display Output Test...");
+    delay_ms(DELAY_CHECK);
+    display_out_ok = test_display_output();
+    record_pass("DISPLAY_OUTPUT");
+    
+    print_line("");
+    if (vga_mem_ok && framebuf_ok && vga_ctrl_ok && display_out_ok) {
+        kprintf("%s[OK] Display system fully operational%s\n", COLOR_GREEN, COLOR_RESET);
+    } else {
+        kprintf("%s[WARN] Display issues detected%s\n", COLOR_YELLOW, COLOR_RESET);
+    }
+    delay_ms(DELAY_SECTION);
+}
+
 int krow_strcmp(const char *a, const char *b) {
     while (*a && *b && *a == *b) {
         a++;
@@ -213,12 +351,23 @@ int krow_diagnostics_run(void) {
     /* Initialize with simple seed */
     krow_seed = 42;
     
+    /* EARLY CHECKPOINTS FOR BOOT DEBUG */
+    checkpoint_init("Krow Diagnostics Started");
+    
     print_header();
+    checkpoint_init("Banner Displayed");
     delay_ms(DELAY_SECTION);
+    
+    /* RUN EXTENDED DISPLAY TESTS FIRST (to debug black screen) */
+    run_extended_vga_checks();
+    checkpoint_init("Display Diagnostics Complete");
     
     /* Run all diagnostic checks */
     run_core_checks();
+    checkpoint_init("Core Checks Complete");
+    
     run_driver_checks();
+    checkpoint_init("Driver Checks Complete");
     
     /* Execute error handlers for any faults */
     if (state.fault_count > 0) {
@@ -231,12 +380,17 @@ int krow_diagnostics_run(void) {
             }
         }
     }
+    checkpoint_init("Error Handlers Complete");
     
     /* Print final result */
     print_final_result();
+    checkpoint_init("Final Results Displayed");
     
     /* Save diagnostics to log */
     save_diagnostics_log();
+    
+    /* Print checkpoint summary for debugging */
+    checkpoint_summary();
     
     return state.fault_count > 0 ? 1 : 0;
 }

@@ -28,7 +28,7 @@ KROW_CFLAGS=-Wall -Wextra -std=c99 -O2 -fPIC
 KROW_LDFLAGS=
 
 .PHONY: all disk install-disk iso grub clean
-.PHONY: krow krow-clean krow-install krow-uninstall krow-strip krow-run krow-help
+.PHONY: krow krow-check krow-clean krow-install krow-uninstall krow-strip krow-run krow-help krow-livedn
 
 all: iso
 
@@ -120,13 +120,52 @@ krow-help:
 	@echo "  make krow-clean        - Clean Krow build artifacts"
 	@echo "  make krow-install      - Install to rootfs (ROOTFS=<path>)"
 	@echo "  make krow-uninstall    - Uninstall from rootfs (ROOTFS=<path>)"
+	@echo "  make krow-livedn       - Run debug session virtually (live debug)"
+	@echo "  make krow-livedn force - Run extended test suite (600+ tests)"
 	@echo ""
 	@echo "Integration:"
-	@echo "  - Krow source: kernel/core/krow_diagnostics.c"
+	@echo "  - Krow source: kernel/krow_diagnostics.c"
 	@echo "  - Added to kernel build automatically"
 	@echo "  - Call krow_diagnostics_run() from kmain.c"
 	@echo "  - See KROW_INTEGRATION.md for details"
 	@echo "  - Python handler: tools/kernel-krow.py"
+
+# Live debug session - run Krow diagnostics in virtual environment
+krow-livedn:
+	@echo ""
+	@echo "========================================="
+	@echo "KROW DIAGNOSTICS - LIVE DEBUG SESSION"
+	@echo "========================================="
+	@echo ""
+	@echo "[*] Creating virtual diagnostic environment..."
+	@echo "[*] Simulating boot sequence..."
+	@echo ""
+	@python3 tools/kernel-krow-simulator.py
+	@echo ""
+	@echo "========================================="
+	@echo "[OK] Virtual diagnostic session complete"
+	@echo "========================================="
+	@echo ""
+
+# Live debug with extended tests - run 600+ tests including network diagnostics
+krow-livedn force:
+	@echo ""
+	@echo "========================================="
+	@echo "KROW DIAGNOSTICS - EXTENDED TEST SUITE"
+	@echo "========================================="
+	@echo "Running 600+ comprehensive tests..."
+	@echo "Including 200 mini tests for:"
+	@echo "  - Internet connectivity"
+	@echo "  - DNS resolution"
+	@echo "  - Network protocols"
+	@echo "  - Advanced hardware checks"
+	@echo ""
+	@python3 tools/kernel-krow-simulator.py force
+	@echo ""
+	@echo "========================================="
+	@echo "[OK] Extended test suite complete"
+	@echo "========================================="
+	@echo ""
 
 # ============================================================================
 # OS BUILD TARGETS
