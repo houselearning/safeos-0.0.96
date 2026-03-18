@@ -1,0 +1,84 @@
+#!/bin/sh
+# ============================================================================
+# KROW DIAGNOSTICS INIT SCRIPT
+# SafeOS Early Diagnostic System
+# 
+# Integration: Place in /etc/init.d/S01krow
+# Permissions: chmod +x /etc/init.d/S01krow
+# ============================================================================
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+# Colors for output
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+RESET='\033[0m'
+
+# Configuration
+KROW_BINARY="/bin/krow_diagnostics"
+KROW_PYTHON="/usr/bin/kernel-krow.py"
+LOG_FILE="/var/log/krow_diag.log"
+
+# Check if krow binary exists
+if [ ! -f "$KROW_BINARY" ]; then
+    echo "${RED}[ERROR]${RESET} Krow Diagnostics binary not found at $KROW_BINARY"
+    exit 1
+fi
+
+case "$1" in
+    start)
+        echo ""
+        echo "${YELLOW}[*] Starting Krow Diagnostics v1.0${RESET}"
+        echo ""
+        
+        # Ensure log directory exists
+        mkdir -p /var/log
+        
+        # Run diagnostics
+        $KROW_BINARY
+        KROW_RESULT=$?
+        
+        echo ""
+        
+        # Report results
+        if [ $KROW_RESULT -eq 0 ]; then
+            echo "${GREEN}[OK] All system diagnostics passed${RESET}"
+            echo "[*] System ready to proceed with boot sequence"
+        else
+            echo "${RED}[WARNING] System diagnostics found faults${RESET}"
+            echo "[*] Check $LOG_FILE for detailed information"
+            echo "[*] Continuing boot with warnings..."
+        fi
+        
+        echo ""
+        exit 0
+        ;;
+    
+    stop)
+        echo "[*] Krow Diagnostics already completed"
+        exit 0
+        ;;
+    
+    restart)
+        echo "[*] Restarting Krow Diagnostics not supported"
+        exit 1
+        ;;
+    
+    status)
+        if [ -f "$LOG_FILE" ]; then
+            echo "[*] Last Krow Diagnostics run:"
+            tail -20 "$LOG_FILE"
+        else
+            echo "[*] Krow Diagnostics has not been run yet"
+        fi
+        exit 0
+        ;;
+    
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
