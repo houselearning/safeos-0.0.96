@@ -61,4 +61,4 @@ Contributions are welcome. Open issues for bugs or feature requests, and send pu
 
 ## License
 
-Apache Licence 2.0
+[Apache Licence 2.0](LICENCE)
