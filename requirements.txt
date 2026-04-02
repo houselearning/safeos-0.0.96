@@ -1,0 +1,25 @@
+# SafeOS build and dev requirements
+# (this is a combined local/dev requirement manifest; install via OS package manager and pip as indicated)
+
+# System packages
+make
+nasm
+gcc
+pkg-config
+xorriso
+grub-pc-bin
+grub-efi-amd64-bin
+qemu-system-x86
+libc6-dev
+python3
+python3-pip
+
+# Python packages (install with pip)
+pillow
+pytest
+
+# Optional utilities if you use the test harness / scripts
+# (not pip packages; install via OS package manager)
+# qemu-system-x86 (or qemu-system-i386)
+# git
+# util-linux (for mount/losetup)

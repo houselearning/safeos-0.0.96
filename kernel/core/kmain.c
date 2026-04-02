@@ -29,6 +29,91 @@ static void serial_puthex(uint32_t v) {
     }
 }
 
+/* Basic inb helper for reading serial port registers */
+static unsigned char inb(unsigned short port) {
+    unsigned char ret;
+    __asm__ __volatile__("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+
+/* Poll whether data is available on COM1 (LSR bit 0) */
+static int serial_data_available(void) {
+    return (inb(0x3FD) & 0x01);
+}
+
+/* Blocking getchar from COM1 (0x3F8) */
+static char serial_getc(void) {
+    while (!(inb(0x3FD) & 0x01)) {
+        /* Sleep a little to be nice on CPU */
+        __asm__ __volatile__("hlt");
+    }
+    return (char)inb(0x3F8);
+}
+
+/* Simple helpers to compare/scan strings without pulling in headers */
+static int starts_with(const char *s, const char *p) {
+    while (*p) {
+        if (*s++ != *p++) return 0;
+    }
+    return 1;
+}
+
+static int streq(const char *a, const char *b) {
+    while (*a && *b && *a == *b) { a++; b++; }
+    return (*a == '\0' && *b == '\0');
+}
+
+/* Read a line from serial (echoing) into buf, returns length */
+static int serial_readline(char *buf, int maxlen) {
+    int pos = 0;
+    while (pos < maxlen - 1) {
+        char c = serial_getc();
+        if (c == '\r') c = '\n';
+        if (c == '\n') {
+            serial_putc('\n');
+            buf[pos] = '\0';
+            return pos;
+        }
+        if (c == '\b' || c == 127) {
+            if (pos > 0) { pos--; serial_puts("\b \b"); }
+            continue;
+        }
+        if (c >= 32 && c < 127) {
+            buf[pos++] = c;
+            serial_putc(c);
+        }
+    }
+    buf[pos] = '\0';
+    return pos;
+}
+
+/* Minimal interactive serial shell (very small command set) */
+static void serial_shell(void) {
+    char line[128];
+    serial_puts("\nWelcome to SafeOS serial shell\n");
+    for (;;) {
+        serial_puts("safeos> ");
+        int n = serial_readline(line, sizeof(line));
+        if (n <= 0) continue;
+
+        if (streq(line, "help")) {
+            serial_puts("Commands: help, echo <text>, reboot, exit\n");
+        } else if (starts_with(line, "echo ")) {
+            serial_puts(line + 5); serial_putc('\n');
+        } else if (streq(line, "reboot")) {
+            serial_puts("Rebooting...\n");
+            /* Attempt keyboard-controller reset */
+            __asm__ __volatile__("outb %%al, %%dx" :: "a"((unsigned char)0xFE), "d"((unsigned short)0x64));
+            for (;;) __asm__ __volatile__("hlt");
+        } else if (streq(line, "exit")) {
+            serial_puts("Exiting shell\n");
+            break;
+        } else {
+            serial_puts("Unknown command. Type 'help'\n");
+        }
+    }
+}
+
 /* Boot timing */
 static uint32_t boot_start_time = 0;
 
@@ -240,17 +325,31 @@ void kmain(unsigned long magic, unsigned long addr) {
     /* Tiny serial debug message */
     serial_puts("KMAIN\n");
 
-    gui_init();
-    serial_puts("GUI OK\n");
-    boot_progress(80);
+    if (gui_init() == 0) {
+        serial_puts("GUI OK\n");
+        boot_progress(80);
 
-    /* Skip startup screen - go straight to desktop */
-    desktop_init_home();
-    serial_puts("DESKTOP OK\n");
-    boot_progress(100);  /* Hide progress bar */
-    
-    /* Clear screen to dark gray background */
-    framebuffer_clear(0x202020);
+        /* Skip startup screen - go straight to desktop */
+        desktop_init_home();
+        serial_puts("DESKTOP OK\n");
+        boot_progress(100);  /* Hide progress bar */
+        
+        /* Clear screen to dark gray background */
+        framebuffer_clear(0x202020);
 
-    gui_main_loop();       // event loop - displays desktop with icons
+        gui_main_loop();       // event loop - displays desktop with icons
+    } else {
+        /* GUI init failed — stay alive and provide serial diagnostics */
+        serial_puts("GUI FAILED - running headless diagnostics\n");
+        boot_progress(100);
+        /* Run interactive serial shell; if it exits, fall back to heartbeat */
+        serial_shell();
+
+        /* Idle loop: show periodic heartbeat so the VM is responsive */
+        while (1) {
+            serial_puts("safeos: idle\n");
+            for (volatile int i = 0; i < 1000000; ++i) { __asm__ __volatile__("nop"); }
+            __asm__ __volatile__("hlt");
+        }
+    }
 }

@@ -123,6 +123,10 @@ krow-help:
 	@echo "  make krow-livedn       - Run debug session virtually (live debug)"
 	@echo "  make krow-livedn force - Run extended test suite (600+ tests)"
 	@echo ""
+	@echo "Options:"
+	@echo "  make krow-livedn SAVE=1       - Save output to krow_results.log"
+	@echo "  make krow-livedn force SAVE=1 - Save extended test output to krow_results.log"
+	@echo ""
 	@echo "Integration:"
 	@echo "  - Krow source: kernel/krow_diagnostics.c"
 	@echo "  - Added to kernel build automatically"
@@ -140,7 +144,7 @@ krow-livedn:
 	@echo "[*] Creating virtual diagnostic environment..."
 	@echo "[*] Simulating boot sequence..."
 	@echo ""
-	@python3 tools/kernel-krow-simulator.py
+	@python3 tools/kernel-krow-simulator.py $(if $(SAVE),-s)
 	@echo ""
 	@echo "========================================="
 	@echo "[OK] Virtual diagnostic session complete"
@@ -160,7 +164,7 @@ krow-livedn force:
 	@echo "  - Network protocols"
 	@echo "  - Advanced hardware checks"
 	@echo ""
-	@python3 tools/kernel-krow-simulator.py force
+	@python3 tools/kernel-krow-simulator.py force $(if $(SAVE),-s)
 	@echo ""
 	@echo "========================================="
 	@echo "[OK] Extended test suite complete"

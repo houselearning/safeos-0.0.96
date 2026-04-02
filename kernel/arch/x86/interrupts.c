@@ -158,10 +158,17 @@ void pic_send_eoi(uint8_t irq) {
     outb(0x20, 0x20);
 }
 
-// ISR handlers (stubs)
+// ISR handlers
 void isr_handler(uint32_t int_no) {
-    // Handle exception
-    (void)int_no;
+    // Print a concise diagnostic and halt. Exceptions are typically fatal
+    // in this simple kernel; report the interrupt number to the console
+    // and stop execution to aid debugging.
+    extern int kprintf(const char *fmt, ...);
+    kprintf("Exception: %u\n", int_no);
+
+    // Disable interrupts and spin forever
+    __asm__ __volatile__("cli");
+    for (;;) { __asm__ __volatile__("hlt"); }
 }
 
 void irq_handler(uint32_t irq_no) {
