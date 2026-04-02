@@ -10,8 +10,15 @@ int gui_init(void) {
        serial/idle mode rather than attempting graphics. */
     framebuffer_clear(0x202020);
     extern uint8_t* fb_address;
-    if (fb_address && (uintptr_t)fb_address != 0) return 0;
-    return -1;
+    /* If no framebuffer provided by bootloader, initialize fallback framebuffer. */
+    if (!fb_address || (uintptr_t)fb_address == 0) {
+        framebuffer_init(1024, 768, 32);
+        if (fb_address && (uintptr_t)fb_address != 0) {
+            return 0;
+        }
+        return -1;
+    }
+    return 0;
 }
 
 void gui_main_loop(void) {

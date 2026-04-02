@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "paging.h"
 #include "pci.h"
+#include "krow_diagnostics.h"
 #include "../gui/gui.h"
 #include "../gui/desktop.h"
 #include "text_desktop.h"
@@ -185,6 +186,30 @@ static void phys_write_test(uint32_t phys) {
     serial_puts("PHYS_TEST: done\n");
 }
 
+/* Probe a set of known framebuffer physical addresses and return the first
+   address that appears writable/readable. This helps pick the visible LFB in
+   environments (e.g. VMware) that wire the framebuffer to high physical
+   regions such as 0xFD000000. Returns 0 if none detected. */
+static uint32_t probe_framebuffer_candidates(void) {
+    uint32_t candidates[] = { 0xFE000000u, 0xE8000000u, 0xFD000000u, 0xE0000000u, 0x01000000u, 0x00300000u };
+    const uint32_t test_val = 0xA5A5F00Du;
+    for (size_t i = 0; i < sizeof(candidates)/sizeof(candidates[0]); ++i) {
+        uint32_t addr = candidates[i];
+        serial_puts("FB_PROBE: trying 0x"); serial_puthex(addr); serial_putc('\n');
+        volatile uint32_t *p = (volatile uint32_t *)(uintptr_t)addr;
+        uint32_t old = *p;
+        *p = test_val;
+        uint32_t readback = *p;
+        *p = old;
+        if (readback == test_val) {
+            serial_puts("FB_PROBE: success 0x"); serial_puthex(addr); serial_putc('\n');
+            return addr;
+        }
+        serial_puts("FB_PROBE: fail 0x"); serial_puthex(addr); serial_putc('\n');
+    }
+    return 0;
+}
+
 void kmain(unsigned long magic, unsigned long addr) {
     (void)magic;
     (void)addr;
@@ -224,7 +249,10 @@ void kmain(unsigned long magic, unsigned long addr) {
          information (linear framebuffer address, resolution, pitch, bpp)
          and initialize the framebuffer with the real values. Otherwise
          fall back to conservative defaults. */
-     if (addr) {
+    /* Headless/debug mode flag (set if kernel cmdline contains debug/nogui) */
+    int headless_mode = 0;
+
+    if (addr) {
         typedef struct {
             uint32_t flags;
             uint32_t mem_lower, mem_upper;
@@ -251,9 +279,9 @@ void kmain(unsigned long magic, unsigned long addr) {
         multiboot_info_t *mb = (multiboot_info_t *)(uintptr_t)addr;
         serial_puts("MB: addr=0x"); serial_puthex((uint32_t)addr); serial_puts(" flags=0x"); serial_puthex(mb->flags); serial_puts(" vbe_mode_info=0x"); serial_puthex(mb->vbe_mode_info); serial_puts(" vbe_mode=0x"); serial_puthex(mb->vbe_mode); serial_putc('\n');
 
-        /* Prefer using the vbe_mode_info pointer directly when provided by
-           the bootloader; some boot environments may not set the flags
-           bit consistently. */
+            /* Prefer using the vbe_mode_info pointer directly when provided by
+                the bootloader; some boot environments may not set the flags
+                bit consistently. */
         if (mb->vbe_mode_info) {
             uint8_t *mode = (uint8_t *)(uintptr_t)mb->vbe_mode_info;
             if (mode) {
@@ -293,19 +321,58 @@ void kmain(unsigned long magic, unsigned long addr) {
         } else {
             serial_puts("MB: no vbe_mode_info pointer\n");
         }
+        /* Parse kernel command line (if provided) for debug/headless flags
+           The multiboot "cmdline" field points to a NUL-terminated string. */
+        int headless_mode = 0;
+        if (mb->cmdline) {
+            const char *cmd = (const char *)(uintptr_t)mb->cmdline;
+            serial_puts("CMDLINE: ");
+            /* Print up to 256 bytes of the cmdline for debugging */
+            for (int i = 0; i < 256 && cmd[i]; ++i) serial_putc(cmd[i]);
+            serial_putc('\n');
+            /* Simple substring checks for common safe-mode flags */
+            /* implement small strstr-like search */
+            int found = 0;
+            const char *needle_list[] = {"debug=1", "nogui", "nomodeset", NULL};
+            for (const char **n = needle_list; *n; ++n) {
+                const char *needle = *n;
+                const char *h = cmd;
+                while (*h) {
+                    const char *h2 = h;
+                    const char *p = needle;
+                    while (*h2 && *p && *h2 == *p) { h2++; p++; }
+                    if (*p == '\0') { found = 1; break; }
+                    h++;
+                }
+                if (found) break;
+            }
+            if (found) {
+                headless_mode = 1;
+                serial_puts("CMDLINE: headless/debug flag detected -> running non-interactive diagnostics\n");
+            }
+        }
     } else {
         serial_puts("MB: no addr\n");
     }
 
     /* If no usable linear framebuffer was provided (or mapping not available)
-       use graphics framebuffer at common QEMU/VGA locations */
+       probe a set of common framebuffers (VMware/QEMU/etc) and pick the
+       first responsive one. If none respond, fall back to the old QEMU
+       low-memory LFB. */
     extern uint8_t* fb_address;
     if (!fb_address) {
-        /* Fall back to an identity-mapped framebuffer in low memory that QEMU shows reliably */
-        uint32_t graphics_fb = 0x00300000;
-        fb_init((uint8_t *)(uintptr_t)graphics_fb, 1024, 768, 1024 * 4, 32);
-        serial_puts("FB: using fallback framebuffer at 0x"); serial_puthex(graphics_fb);
-        serial_puts(" (1024x768x32)\n");
+        uint32_t found = probe_framebuffer_candidates();
+        if (found) {
+            fb_init((uint8_t *)(uintptr_t)found, 1024, 768, 1024 * 4, 32);
+            serial_puts("FB: using probed framebuffer at 0x"); serial_puthex(found);
+            serial_puts(" (1024x768x32)\n");
+        } else {
+            /* Fall back to an identity-mapped framebuffer in low memory that QEMU shows reliably */
+            uint32_t graphics_fb = 0x00300000;
+            fb_init((uint8_t *)(uintptr_t)graphics_fb, 1024, 768, 1024 * 4, 32);
+            serial_puts("FB: using fallback framebuffer at 0x"); serial_puthex(graphics_fb);
+            serial_puts(" (1024x768x32)\n");
+        }
     }
 
     /* Print framebuffer pointer for debugging */
@@ -322,10 +389,19 @@ void kmain(unsigned long magic, unsigned long addr) {
     serial_puts("DEVICES OK\n");
     boot_progress(60);
 
+    /* Run Krow Diagnostics - interactive BootRepair menu */
+    serial_puts("[*] Running Krow Diagnostics...\n");
+    int krow_faults = krow_diagnostics_run(headless_mode);
+    if (krow_faults) {
+        serial_puts("[*] Krow Diagnostics reported faults.\n");
+    } else {
+        serial_puts("[*] Krow Diagnostics passed.\n");
+    }
+
     /* Tiny serial debug message */
     serial_puts("KMAIN\n");
 
-    if (gui_init() == 0) {
+    if (!headless_mode && gui_init() == 0) {
         serial_puts("GUI OK\n");
         boot_progress(80);
 

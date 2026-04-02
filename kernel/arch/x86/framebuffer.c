@@ -132,5 +132,11 @@ void fb_present(void) {
         uint8_t *src = ((uint8_t *)backbuffer) + (y * row_bytes);
         memcpy(dst, src, row_bytes);
     }
-    fb_serial_puts("FB: presented\n");
+    /* Avoid spamming serial with a message on every present. Log only
+       the first present to confirm the framebuffer is being updated. */
+    static int printed_once = 0;
+    if (!printed_once) {
+        fb_serial_puts("FB: presented\n");
+        printed_once = 1;
+    }
 }

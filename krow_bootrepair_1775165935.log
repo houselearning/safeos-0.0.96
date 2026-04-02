@@ -1,0 +1,30 @@
+2026-04-02 21:38:55,118 INFO: Repo root: /workspaces/safeos-0.0.96
+2026-04-02 21:38:55,118 INFO: Target: /workspaces/safeos-0.0.96
+2026-04-02 21:38:55,118 INFO: Backup dir: /workspaces/safeos-0.0.96/.krow_bootrepair_backup_1775165935
+2026-04-02 21:38:55,118 INFO: Packaging recovery ISO with repair tools included
+2026-04-02 21:38:55,121 INFO: Tools copied to ISO tree: /workspaces/safeos-0.0.96/build/iso/tools
+2026-04-02 21:38:55,121 DEBUG: Run: make iso
+2026-04-02 21:38:55,405 DEBUG: Output: Makefile:156: warning: overriding recipe for target 'krow-livedn'
+Makefile:139: warning: ignoring old recipe for target 'krow-livedn'
+mkdir -p iso
+mkdir -p build/iso/boot/grub
+cp SafeOS.bin build/iso/SafeOS.bin
+cp iso/grub.cfg build/iso/boot/grub/grub.cfg
+grub-mkrescue -o SafeOS-1.0.iso build/iso
+xorriso 1.5.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:SafeOS-1.0.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data, 13.9g free
+Added to ISO image: directory '/'='/tmp/grub.sxaYYE'
+xorriso : UPDATE :     295 files added in 1 seconds
+Added to ISO image: directory '/'='/workspaces/safeos-0.0.96/build/iso'
+xorriso : UPDATE :     310 files added in 1 seconds
+xorriso : NOTE : Copying to System Area: 512 bytes from file '/usr/lib/grub/i386-pc/boot_hybrid.img'
+ISO image produced: 2600 sectors
+Written to medium : 2600 sectors at LBA 0
+Writing to 'stdio:SafeOS-1.0.iso' completed successfully.
+
+
+2026-04-02 21:38:55,406 INFO: Recovery ISO build attempted; check output for SafeOS-1.0.iso

@@ -1,0 +1,11 @@
+2026-04-02 21:39:00,204 INFO: Repo root: /workspaces/safeos-0.0.96
+2026-04-02 21:39:00,205 INFO: Target: /workspaces/safeos-0.0.96/build/iso
+2026-04-02 21:39:00,206 INFO: Backup dir: /workspaces/safeos-0.0.96/.krow_bootrepair_backup_1775165940
+2026-04-02 21:39:00,206 INFO: Starting diagnosis...
+2026-04-02 21:39:00,206 INFO: Found SafeOS.bin at /workspaces/safeos-0.0.96/SafeOS.bin
+2026-04-02 21:39:00,207 INFO: SHA256 repo=32eb417e1abdc8cc53775158aa0831c8d8510ae9fa07549a94c71ed0709bd4a8 target=32eb417e1abdc8cc53775158aa0831c8d8510ae9fa07549a94c71ed0709bd4a8
+2026-04-02 21:39:00,207 INFO: Diagnosis Summary:
+2026-04-02 21:39:00,207 INFO:   GRUB_CFG                  : OK
+2026-04-02 21:39:00,208 INFO:   LIMINE_CFG                : MISSING/DIFF
+2026-04-02 21:39:00,208 INFO:   SafeOS.bin                : OK
+2026-04-02 21:39:00,208 INFO:   SafeOS_checksum_match     : OK

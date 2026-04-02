@@ -32,6 +32,8 @@ void gui_main_loop(void);
 // Drawing functions
 void gui_draw_rect(int x, int y, int w, int h, uint32_t color);
 void gui_draw_text(int x, int y, const char *text, uint32_t fg, uint32_t bg);
+// Draw a filled circle centered at (cx,cy) with radius r
+void gui_draw_circle(int cx, int cy, int r, uint32_t color);
 
 // Additional colors
 #define GUI_COLOR_BACKGROUND 0x101010

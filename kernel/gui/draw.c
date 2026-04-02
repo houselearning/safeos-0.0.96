@@ -30,3 +30,21 @@ void gui_draw_text(int x, int y, const char *text, uint32_t fg, uint32_t bg) {
         text++;
     }
 }
+
+void gui_draw_circle(int cx, int cy, int r, uint32_t color) {
+    if (r <= 0) return;
+    int r2 = r * r;
+    int y0 = cy - r;
+    int y1 = cy + r;
+    for (int y = y0; y <= y1; y++) {
+        if (y < 0 || y >= (int)fb_height) continue;
+        for (int x = cx - r; x <= cx + r; x++) {
+            if (x < 0 || x >= (int)fb_width) continue;
+            int dx = x - cx;
+            int dy = y - cy;
+            if (dx * dx + dy * dy <= r2) {
+                fb_putpixel(x, y, color);
+            }
+        }
+    }
+}

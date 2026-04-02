@@ -1,0 +1,18 @@
+2026-04-02 20:22:46,562 INFO: Repo root: /workspaces/safeos-0.0.96
+2026-04-02 20:22:46,563 INFO: Target: /workspaces/safeos-0.0.96/build/iso
+2026-04-02 20:22:46,563 INFO: Backup dir: /workspaces/safeos-0.0.96/.krow_bootrepair_backup_1775161366
+2026-04-02 20:22:46,563 INFO: Starting diagnosis...
+2026-04-02 20:22:46,564 INFO: Found SafeOS.bin at /workspaces/safeos-0.0.96/SafeOS.bin
+2026-04-02 20:22:46,564 INFO: SHA256 repo=a6dec17bf23b45ce6c3d04f01ddeaeb2eee18655615c49a002a536ae915e73a7 target=a6dec17bf23b45ce6c3d04f01ddeaeb2eee18655615c49a002a536ae915e73a7
+2026-04-02 20:22:46,565 INFO: Diagnosis Summary:
+2026-04-02 20:22:46,565 INFO:   GRUB_CFG                  : OK
+2026-04-02 20:22:46,565 INFO:   LIMINE_CFG                : MISSING/DIFF
+2026-04-02 20:22:46,566 INFO:   SafeOS.bin                : OK
+2026-04-02 20:22:46,566 INFO:   SafeOS_checksum_match     : OK
+2026-04-02 20:22:46,566 INFO: Beginning repair (apply=True) (mount_image=False install_bootloader=False)
+2026-04-02 20:22:46,567 INFO: Found SafeOS.bin at /workspaces/safeos-0.0.96/SafeOS.bin
+2026-04-02 20:22:46,567 INFO: Found grub.cfg at /workspaces/safeos-0.0.96/build/iso/boot/grub/grub.cfg
+2026-04-02 20:22:46,567 INFO: Found limine.cfg at /workspaces/safeos-0.0.96/iso/limine.cfg
+2026-04-02 20:22:46,568 INFO: limine.cfg missing; will restore to /workspaces/safeos-0.0.96/build/iso/limine.cfg
+2026-04-02 20:22:46,569 INFO: Restored limine.cfg
+2026-04-02 20:22:46,569 INFO: Repair phase complete. To finish bootloader installation on real hardware or disk images, run host tools like grub-install or use the provided install_to_disk.sh script.

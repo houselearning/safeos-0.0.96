@@ -1,6 +1,8 @@
 #include "core/stdio.h"
 #include "core/string.h"
 #include "core/unistd.h"
+#include "core/fs.h"
+#include "arch/x86/keyboard.h"
 
 /* ============================================================================
    KROW DIAGNOSTICS V 1.0
@@ -328,6 +330,58 @@ void save_diagnostics_log(void) {
     kprintf("\n[*] Log file would be written to: KROW_OUTPUT.log\n");
 }
 
+/* ---------------- Krow BootRepair helpers (file-scope) ---------------- */
+/* Create a marker file in the kernel's in-memory FS to signal host tools */
+void create_bootrepair_marker(void) {
+    const char *marker = "KROW_BOOTREPAIR_REQUEST";
+    const char *msg = "Krow BootRepair requested. Run tools/krow_bootrepair.py on host.\n";
+    if (fs_create_file(marker) == 0) {
+        fs_write_file(marker, msg, (uint32_t)strlen(msg));
+        kprintf("%s[KROW] BootRepair marker created: %s%s\n", COLOR_CYAN, marker, COLOR_RESET);
+        kprintf("%s[KROW] To run repair (host): python3 tools/krow_bootrepair.py repair --target /mnt/safeos --apply%s\n", COLOR_CYAN, COLOR_RESET);
+    } else {
+        kprintf("%s[KROW] Could not create BootRepair marker (in-memory FS may not persist)%s\n", COLOR_YELLOW, COLOR_RESET);
+    }
+}
+
+/* Minimal in-kernel repair: create or restore small config files in RAM FS */
+void perform_in_kernel_minimal_repair(void) {
+    const char *cfg = "[settings]\nversion=1.0\ntheme=dark\n";
+    if (fs_create_file("config.ini") == 0) {
+        fs_write_file("config.ini", cfg, (uint32_t)strlen(cfg));
+        kprintf("%s[KROW] Restored in-RAM config.ini%s\n", COLOR_CYAN, COLOR_RESET);
+    } else {
+        kprintf("%s[KROW] config.ini already present or cannot create%s\n", COLOR_YELLOW, COLOR_RESET);
+    }
+}
+
+/* Wait for a printable keypress on the physical keyboard */
+char wait_for_keypress(void) {
+    while (1) {
+        uint8_t sc = keyboard_read_scancode();
+        char c = scancode_to_ascii(sc);
+        if (c) return c;
+    }
+}
+
+void krow_bootrepair_menu(void) {
+    kprintf("\n");
+    kprintf("%s[KROW] BootRepair Menu:%s\n", COLOR_CYAN, COLOR_RESET);
+    kprintf("  b : Create BootRepair marker for host-based repair\n");
+    kprintf("  r : Attempt minimal in-kernel repair (config files in RAM)\n");
+    kprintf("  q : Continue boot (skip)\n");
+    kprintf("Press key: ");
+    char ch = wait_for_keypress();
+    kprintf("%c\n", ch);
+    if (ch == 'b' || ch == 'B') {
+        create_bootrepair_marker();
+    } else if (ch == 'r' || ch == 'R') {
+        perform_in_kernel_minimal_repair();
+    } else {
+        kprintf("%s[KROW] Skipping BootRepair menu%s\n", COLOR_YELLOW, COLOR_RESET);
+    }
+}
+
 void print_final_result(void) {
     print_line("");
     print_line("=====================================");
@@ -354,7 +408,7 @@ void print_final_result(void) {
    MAIN DIAGNOSTIC ROUTINE
    ============================================================================ */
 
-int krow_diagnostics_run(void) {
+int krow_diagnostics_run(int headless) {
     /* Initialize with simple seed */
     krow_seed = 42;
     
@@ -396,7 +450,13 @@ int krow_diagnostics_run(void) {
     /* Save diagnostics to log */
     save_diagnostics_log();
     
-    /* Print checkpoint summary for debugging */
+    /* Present interactive BootRepair menu to the user (serial/keyboard)
+       Skip interactive menu when running in headless/debug mode. */
+    if (!headless) {
+        krow_bootrepair_menu();
+    } else {
+        kprintf("%s[KROW] Headless mode detected: skipping interactive BootRepair menu%s\n", COLOR_CYAN, COLOR_RESET);
+    }
     checkpoint_summary();
     
     return state.fault_count > 0 ? 1 : 0;
