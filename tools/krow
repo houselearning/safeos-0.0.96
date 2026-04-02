@@ -14,22 +14,6 @@ import re
 import os
 import subprocess
 
-#!/usr/bin/env python3
-"""
-Simple krow CLI helper: list recent diagnostics and run fix-recent <n>
-
-Usage:
-  krow list                - list recent test results (reads krow_results.log)
-  krow fix-recent N        - show extended report for Nth listed failure
-
-This tool looks for krow_results.log (produced by simulator) or /var/log/krow_diag.log.
-"""
-
-import sys
-import re
-import os
-import subprocess
-
 LOG_FILES = ["krow_results.log", "KROW_OUTPUT.log", "/var/log/krow_diag.log"]
 
 
