@@ -25,7 +25,8 @@
 int gui_point_in_rect(int px, int py, int x, int y, int w, int h);
 
 // GUI lifecycle
-void gui_init(void);
+// Returns 0 on success, negative on failure (useful for headless fallback)
+int gui_init(void);
 void gui_main_loop(void);
 
 // Drawing functions

@@ -4,8 +4,14 @@
 #include "desktop.h"
 #include "../arch/x86/framebuffer.h"
 
-void gui_init(void) {
+int gui_init(void) {
+    /* Try to initialize the GUI. If there is no usable framebuffer
+       available, return error so the kernel can fall back to a
+       serial/idle mode rather than attempting graphics. */
     framebuffer_clear(0x202020);
+    extern uint8_t* fb_address;
+    if (fb_address && (uintptr_t)fb_address != 0) return 0;
+    return -1;
 }
 
 void gui_main_loop(void) {

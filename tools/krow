@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+"""
+Simple krow CLI helper: list recent diagnostics and run fix-recent <n>
+
+Usage:
+  krow list                - list recent test results (reads krow_results.log)
+  krow fix-recent N        - show extended report for Nth listed failure
+
+This tool looks for krow_results.log (produced by simulator) or /var/log/krow_diag.log.
+"""
+
+import sys
+import re
+import os
+import subprocess
+
+#!/usr/bin/env python3
+"""
+Simple krow CLI helper: list recent diagnostics and run fix-recent <n>
+
+Usage:
+  krow list                - list recent test results (reads krow_results.log)
+  krow fix-recent N        - show extended report for Nth listed failure
+
+This tool looks for krow_results.log (produced by simulator) or /var/log/krow_diag.log.
+"""
+
+import sys
+import re
+import os
+import subprocess
+
+LOG_FILES = ["krow_results.log", "KROW_OUTPUT.log", "/var/log/krow_diag.log"]
+
+
+def find_log():
+    for p in LOG_FILES:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def parse_log(path):
+    entries = []
+    # tolerant regexes that handle ANSI color codes and extra prefixes
+    numbered_re = re.compile(r"^\s*\d+:\s*\[(PASS|FAIL)\]\s*(?:([0-9A-Fa-f]+):\s*)?(.*)$")
+    generic_re = re.compile(r".*\[(PASS|FAIL)\].*?([A-Z0-9_]+):\s*(.*)")
+    ansi_re = re.compile(r'\x1b\[[0-9;]*m')
+    with open(path, 'r', errors='ignore') as f:
+        for line in f:
+            clean = ansi_re.sub('', line)
+            m = generic_re.search(clean)
+            if m:
+                state = m.group(1)
+                token = m.group(2)
+                text = m.group(3).strip()
+                entries.append((state, token, text))
+                continue
+            m2 = numbered_re.search(clean)
+            if m2:
+                state = m2.group(1)
+                ident = m2.group(2) or ""
+                text = m2.group(3).strip()
+                entries.append((state, ident, text))
+    return entries
+
+
+def list_entries(entries):
+    if not entries:
+        print("No entries found in diagnostic log.")
+        return
+    for i, (state, token, text) in enumerate(entries, start=1):
+        print(f"{i}: [{state}] {token}: {text}")
+
+
+def find_iso_candidates():
+    # look for SafeOS-*.iso in workspace
+    candidates = []
+    for name in os.listdir('.'):
+        if name.lower().endswith('.iso') and 'safeos' in name.lower():
+            candidates.append(name)
+    return candidates
+
+
+def hexdump_file(path, length=512):
+    try:
+        out = subprocess.check_output(['xxd', '-g', '1', '-l', str(length), path])
+        return out.decode('utf-8', errors='ignore')
+    except Exception:
+        # fallback: read and format
+        try:
+            with open(path, 'rb') as f:
+                data = f.read(length)
+        except Exception as e:
+            print('Failed to read file for hexdump:', e)
+            return ''
+        lines = []
+        for i in range(0, len(data), 16):
+            chunk = data[i:i+16]
+            hexb = ' '.join(f"{b:02x}" for b in chunk)
+            printable = ''.join((chr(b) if 32 <= b < 127 else '.') for b in chunk)
+            lines.append(f"{i:08x}: {hexb:<48}  {printable}")
+        return '\n'.join(lines)
+
+
+def handle_iso_boot(text, repair=False):
+    print('\n[ISO_BOOT] Running ISO boot-sector diagnostics...')
+    candidates = find_iso_candidates()
+    if not candidates:
+        print('No SafeOS ISO found in current directory.')
+        return 1
+    iso = candidates[0]
+    print(f'Using ISO: {iso}')
+    tmp = '.krow_boot_sector.bin'
+    try:
+        # extract the first 4096 bytes to inspect boot structures.
+        with open(iso, 'rb') as f:
+            data = f.read(4096)
+        with open(tmp, 'wb') as t:
+            t.write(data)
+    except Exception as e:
+        print('Failed to extract sectors from ISO:', e)
+        return 1
+
+    print('\nBoot-sector hexdump (first 512 bytes):')
+    print(hexdump_file(tmp, 512))
+
+    # Check MBR signature at offset 510-511 (0x55 0xAA)
+    try:
+        with open(tmp, 'rb') as f:
+            boot = f.read(512)
+        sig = boot[510:512]
+        if sig == b'\x55\xAA':
+            print('\n[OK] MBR boot signature 0x55AA present.')
+        else:
+            print('\n[FAIL] MBR boot signature 0x55AA missing. Signature bytes:', sig.hex())
+            print('Explanation: The ISO may not contain a proper MBR/bootstrap. This causes bootloaders that expect an MBR to fail.')
+            print('Fix suggestions:')
+            print('  - Rebuild the ISO ensuring the boot image is included.')
+            print('  - Ensure the Makefile target that embeds the boot sector (SafeOS.bin) places the multiboot header in the first 8 KiB.')
+            print('  - Use grub-mkrescue or xorriso with the correct hybrid/MBR options.')
+            print('\nYou can regenerate the ISO with:')
+            print('  make iso')
+            if repair:
+                print('\n[REPAIR] Repair flag set: attempting to rebuild ISO now...')
+                try:
+                    rc = subprocess.run(['make', 'iso'], check=False)
+                    if rc.returncode != 0:
+                        print('[REPAIR] make iso failed with return code', rc.returncode)
+                        return 1
+                    else:
+                        print('[REPAIR] make iso completed, re-checking ISO...')
+                        # re-run the check on the new ISO
+                        return handle_iso_boot(text, repair=False)
+                except Exception as e:
+                    print('[REPAIR] Failed to run make iso:', e)
+                    return 1
+            return 1
+    except Exception as e:
+        print('Error while checking MBR signature:', e)
+        return 1
+
+    # Inspect for limine/grub strings
+    txt = data.decode('latin-1', errors='ignore')
+    if 'limine' in txt.lower() or 'grub' in txt.lower():
+        print('\n[INFO] Bootloader strings (limine/grub) found in sectors. Likely bootloader present.')
+    else:
+        print('\n[WARN] No limine/grub strings found in boot sectors. Bootloader contents may be missing.')
+
+    print('\nISO boot diagnostics complete. If boot still fails, run: make krow-livedn force SAVE=1 to produce full logs, then re-run this tool.')
+    return 0
+
+
+def handle_cpu_loop(entries, n):
+    print('\n[CPU_LOOP] Gathering CPU loop trace statistics from log...')
+    # scan entries for CPU_LOOP occurrences and extract timings
+    timings = []
+    for state, token, text in entries:
+        if token == 'CPU_LOOP':
+            m = re.search(r"(\d+\.\d+)ms", text)
+            if m:
+                timings.append(float(m.group(1)))
+    if not timings:
+        print('No CPU_LOOP timing entries found in log.')
+        return 1
+    import statistics
+    print(f'Found {len(timings)} CPU_LOOP samples. Min={min(timings):.2f}ms Max={max(timings):.2f}ms Avg={statistics.mean(timings):.2f}ms')
+    print('\nSuggestion:')
+    print('  - If timings vary widely, investigate CPU throttling, frequency scaling, or contention.')
+    print('  - Check /proc/cpuinfo and dmesg for CPU-related messages.')
+    return 0
+
+
+def fix_recent(entries, n):
+    if n < 1 or n > len(entries):
+        print("Invalid index")
+        return 1
+    state, token, text = entries[n-1]
+    print(f"Selected: {n}: [{state}] {token}: {text}")
+    section = token if token else "UNKNOWN"
+
+    # parse global repair flag from sys.argv if present
+    repair_flag = False
+    if '--repair' in sys.argv:
+        repair_flag = True
+
+    # Specialized handlers for common actionable failures
+    if section == 'ISO_BOOT':
+        return handle_iso_boot(text, repair=repair_flag)
+    if section == 'CPU_LOOP':
+        return handle_cpu_loop(entries, n)
+
+    # Fallback: call kernel-krow.py for extended human-friendly analysis
+    error_code = f"{section}:AUTO:TST=FAULT"
+    script = os.path.join(os.path.dirname(__file__), "kernel-krow.py")
+    if os.path.exists(script):
+        print("Running extended analysis via kernel-krow.py...\n")
+        subprocess.run([script, error_code])
+        return 0
+    else:
+        print("kernel-krow.py not found in tools/; cannot run extended analysis.")
+        print("Error code to analyze:", error_code)
+        return 1
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: krow <list|fix-recent> [N]")
+        return 1
+    cmd = sys.argv[1]
+    log = find_log()
+    if not log:
+        print("No diagnostic log found (looked for krow_results.log,KROW_OUTPUT.log,/var/log/krow_diag.log)")
+        return 1
+    entries = parse_log(log)
+    if cmd == 'list':
+        list_entries(entries)
+        return 0
+    if cmd == 'fix-recent':
+        if len(sys.argv) < 3:
+            print("Usage: krow fix-recent <N>")
+            return 1
+        try:
+            n = int(sys.argv[2])
+        except ValueError:
+            print("N must be an integer")
+            return 1
+        return fix_recent(entries, n)
+    print("Unknown command")
+    return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
