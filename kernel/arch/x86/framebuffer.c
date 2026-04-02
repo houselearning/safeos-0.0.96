@@ -89,23 +89,24 @@ void fb_clear(uint32_t color) {
     }
 }
 
-void fb_putpixel(uint32_t x, uint32_t y, uint32_t color) {
+void fb_putpixel(int x, int y, uint32_t color) {
     if (!fb_address) return;
-    if (x >= fb_width || y >= fb_height) return;
-    
+    if (x < 0 || y < 0) return;
+    if ((uint32_t)x >= fb_width || (uint32_t)y >= fb_height) return;
+
     if (fb_bpp == 32) {
         if (backbuffer) {
-            backbuffer[y * fb_width + x] = color;
+            backbuffer[(uint32_t)y * fb_width + (uint32_t)x] = color;
             return;
         }
         uint32_t* fb = (uint32_t*)fb_address;
-        fb[y * (fb_pitch / 4) + x] = color;
+        fb[(uint32_t)y * (fb_pitch / 4) + (uint32_t)x] = color;
     } else if (fb_bpp == 16) {
         uint16_t* fb = (uint16_t*)fb_address;
-        fb[y * (fb_pitch / 2) + x] = color & 0xFFFF;
+        fb[(uint32_t)y * (fb_pitch / 2) + (uint32_t)x] = color & 0xFFFF;
     } else if (fb_bpp == 8) {
         uint8_t* fb = (uint8_t*)fb_address;
-        fb[y * fb_pitch + x] = color & 0xFF;
+        fb[(uint32_t)y * fb_pitch + (uint32_t)x] = color & 0xFF;
     }
 }
 
@@ -123,11 +124,13 @@ void fb_putchar(int x, int y, char c, uint32_t fg, uint32_t bg) {
 
 void fb_present(void) {
     if (!fb_address || !backbuffer) return;
-    /* Copy per-scanline to respect pitch */
+    /* Copy per-scanline to respect pitch: copy exactly fb_width*bytes_per_pixel */
+    uint32_t bytes_per_pixel = 4;
+    uint32_t row_bytes = fb_width * bytes_per_pixel;
     for (uint32_t y = 0; y < fb_height; ++y) {
         uint8_t *dst = fb_address + y * fb_pitch;
-        uint8_t *src = (uint8_t *)(backbuffer + (y * fb_width));
-        memcpy(dst, src, fb_width * 4);
+        uint8_t *src = ((uint8_t *)backbuffer) + (y * row_bytes);
+        memcpy(dst, src, row_bytes);
     }
     fb_serial_puts("FB: presented\n");
 }

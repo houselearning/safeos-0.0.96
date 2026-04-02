@@ -50,10 +50,63 @@ void calculator_handle_event(gui_event_t *ev) {
                     expr[0] = '\0';
                     expr_len = 0;
                 } else if (c == '=') {
-                    // simple eval, assume + - * /
+                    // Evaluate arithmetic expression supporting + - * /
+                    int ok = 0;
                     int result = 0;
-                    sscanf(expr, "%d", &result); // stub
-                    sprintf(display, "%d", result);
+                    // Simple expression evaluator: tokenize integers and ops
+                    const char *p = expr;
+                    int values[32]; int vtop = 0;
+                    char ops[32]; int otop = 0;
+
+                    auto_apply_op:
+                    while (*p == ' ') p++;
+                    // Parse first number
+                    int sign = 1;
+                    if (*p == '+') { p++; }
+                    else if (*p == '-') { sign = -1; p++; }
+                    if (*p < '0' || *p > '9') { ok = 0; goto finish_eval; }
+                    int cur = 0;
+                    while (*p >= '0' && *p <= '9') { cur = cur * 10 + (*p - '0'); p++; }
+                    values[vtop++] = cur * sign;
+                    ok = 1;
+
+                    while (*p) {
+                        while (*p == ' ') p++;
+                        char op = *p++;
+                        while (*p == ' ') p++;
+                        if (op != '+' && op != '-' && op != '*' && op != '/') { ok = 0; break; }
+                        // parse next number
+                        int s = 1;
+                        if (*p == '+') { p++; }
+                        else if (*p == '-') { s = -1; p++; }
+                        if (*p < '0' || *p > '9') { ok = 0; break; }
+                        int n = 0;
+                        while (*p >= '0' && *p <= '9') { n = n * 10 + (*p - '0'); p++; }
+                        n *= s;
+
+                        // handle precedence: if op is * or /, apply immediately
+                        if (op == '*') {
+                            if (vtop == 0) { ok = 0; break; }
+                            values[vtop-1] = values[vtop-1] * n;
+                        } else if (op == '/') {
+                            if (vtop == 0 || n == 0) { ok = 0; break; }
+                            values[vtop-1] = values[vtop-1] / n;
+                        } else {
+                            // + or - push
+                            if (op == '+') values[vtop++] = n;
+                            else values[vtop++] = -n;
+                        }
+                    }
+
+                    finish_eval:
+                    if (ok) {
+                        int acc = 0;
+                        for (int i = 0; i < vtop; ++i) acc += values[i];
+                        result = acc;
+                        sprintf(display, "%d", result);
+                    } else {
+                        strcpy(display, "ERR");
+                    }
                     expr[0] = '\0';
                     expr_len = 0;
                 } else {

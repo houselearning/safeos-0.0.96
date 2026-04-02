@@ -24,6 +24,7 @@
 /* Test result structure */
 typedef struct {
     char name[32];
+    char id[16];
     int is_ok;
     int has_fault;
     char fault_code[128];
@@ -50,6 +51,10 @@ unsigned int krow_rand(void) {
 int krow_random_fault(void) {
     return (krow_rand() % 100) < 15; /* 15% fault chance */
 }
+
+/* Forward declarations for functions used by earlier checks */
+void record_fault(const char *section, const char *subsection, const char *test);
+void record_pass(const char *test_name);
 
 /* ============================================================================
    UTILITY FUNCTIONS
@@ -214,6 +219,9 @@ void record_fault(const char *section, const char *subsection, const char *test)
     if (state.fault_count < 64) {
         snprintf(state.tests[state.test_count].fault_code, 128,
                 "%s:%s:%s=FAULT", section, subsection, test);
+        /* generate a short id for this test for quick reference */
+        unsigned int v = krow_rand();
+        snprintf(state.tests[state.test_count].id, sizeof(state.tests[state.test_count].id), "%06X", v & 0xFFFFFF);
         state.tests[state.test_count].has_fault = 1;
         state.tests[state.test_count].is_ok = 0;
         state.fault_count++;
@@ -224,6 +232,8 @@ void record_fault(const char *section, const char *subsection, const char *test)
 void record_pass(const char *test_name) {
     if (state.test_count < 64) {
         strcpy(state.tests[state.test_count].name, test_name);
+        unsigned int v = krow_rand();
+        snprintf(state.tests[state.test_count].id, sizeof(state.tests[state.test_count].id), "%06X", v & 0xFFFFFF);
         state.tests[state.test_count].is_ok = 1;
         state.tests[state.test_count].has_fault = 0;
     }
@@ -260,12 +270,11 @@ void print_header(void) {
 void run_check(const char *section, const char *name, const char *subsection) {
     int fault = krow_random_fault();
     if (fault) {
-        kprintf("%s%-15s %s%-20s [%sFAULT%s]\n", 
-               COLOR_CYAN, section, COLOR_RESET, name, COLOR_RED, COLOR_RESET);
+        /* Print numbered line with short id */
+        kprintf("  %2d: [%sFAIL%s] %s: %s\n", state.test_count + 1, COLOR_RED, COLOR_RESET, "----", name);
         record_fault(section, subsection, "TST");
     } else {
-        kprintf("%s%-15s %s%-20s [%sOK%s]\n", 
-               COLOR_CYAN, section, COLOR_RESET, name, COLOR_GREEN, COLOR_RESET);
+        kprintf("  %2d: [%sPASS%s] %s: %s\n", state.test_count + 1, COLOR_GREEN, COLOR_RESET, state.tests[state.test_count].id, name);
         record_pass(name);
     }
     delay_ms(DELAY_CHECK);
@@ -301,8 +310,6 @@ void run_core_checks(void) {
 
 void save_diagnostics_log(void) {
     /* Save diagnostic results to KROW_OUTPUT.log */
-    char buffer[512];
-    int len = 0;
     
     /* In a kernel environment without file I/O, we just note where it would go */
     kprintf("\n[*] Diagnostic Summary:\n");

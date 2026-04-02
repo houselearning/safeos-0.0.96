@@ -1,0 +1,197 @@
+===============================================
+KROW DIAGNOSTICS LOG
+Generated: 2026-04-02 15:52:36
+Mode: Extended Test Suite
+===============================================
+
+[1m[96m
+╔════════════════════════════════════════════╗
+║  KROW DIAGNOSTICS v1.0 - EXTENDED MODE   ║
+║  SafeOS Kernel Boot Diagnostic Console   ║
+║  Running 600+ Tests + 200 Mini-tests     ║
+╚════════════════════════════════════════════╝
+[0m
+  [92m[*][0m System: x86 (i686) architecture
+  [92m[*][0m Bootloader: Limine boot protocol
+  [92m[*][0m Mode: Extended diagnostics
+  [92m[*][0m Timestamp: 2026-04-02 15:52:24
+
+[1mEXTENDED TEST SUITE (Part 1/5)[0m
+
+[93m╔═══════════════════════════════════════╗[0m
+[93m║    COMPREHENSIVE STRESS TESTS         ║[0m
+[93m║    Running 50x iterations (≈600 tests)      ║[0m
+[93m╚═══════════════════════════════════════╝[0m
+
+  [[96m  2.0%[0m] Iteration 1/50 - Checks passed: 14, failed: 0
+  [[96m  4.0%[0m] Iteration 2/50 - Checks passed: 22, failed: 6
+  [[96m  6.0%[0m] Iteration 3/50 - Checks passed: 36, failed: 6
+  [[96m  8.0%[0m] Iteration 4/50 - Checks passed: 44, failed: 12
+  [[96m 10.0%[0m] Iteration 5/50 - Checks passed: 58, failed: 12
+  [[96m 12.0%[0m] Iteration 6/50 - Checks passed: 72, failed: 12
+  [[96m 14.0%[0m] Iteration 7/50 - Checks passed: 86, failed: 12
+  [[96m 16.0%[0m] Iteration 8/50 - Checks passed: 100, failed: 12
+  [[96m 18.0%[0m] Iteration 9/50 - Checks passed: 114, failed: 12
+  [[96m 20.0%[0m] Iteration 10/50 - Checks passed: 120, failed: 20
+  [[96m 22.0%[0m] Iteration 11/50 - Checks passed: 134, failed: 20
+  [[96m 24.0%[0m] Iteration 12/50 - Checks passed: 140, failed: 28
+  [[96m 26.0%[0m] Iteration 13/50 - Checks passed: 154, failed: 28
+  [[96m 28.0%[0m] Iteration 14/50 - Checks passed: 160, failed: 36
+  [[96m 30.0%[0m] Iteration 15/50 - Checks passed: 174, failed: 36
+  [[96m 32.0%[0m] Iteration 16/50 - Checks passed: 180, failed: 44
+  [[96m 34.0%[0m] Iteration 17/50 - Checks passed: 194, failed: 44
+  [[96m 36.0%[0m] Iteration 18/50 - Checks passed: 200, failed: 52
+  [[96m 38.0%[0m] Iteration 19/50 - Checks passed: 214, failed: 52
+  [[96m 40.0%[0m] Iteration 20/50 - Checks passed: 220, failed: 60
+  [[96m 42.0%[0m] Iteration 21/50 - Checks passed: 234, failed: 60
+  [[96m 44.0%[0m] Iteration 22/50 - Checks passed: 248, failed: 60
+  [[96m 46.0%[0m] Iteration 23/50 - Checks passed: 262, failed: 60
+  [[96m 48.0%[0m] Iteration 24/50 - Checks passed: 276, failed: 60
+  [[96m 50.0%[0m] Iteration 25/50 - Checks passed: 290, failed: 60
+  [[96m 52.0%[0m] Iteration 26/50 - Checks passed: 304, failed: 60
+  [[96m 54.0%[0m] Iteration 27/50 - Checks passed: 318, failed: 60
+  [[96m 56.0%[0m] Iteration 28/50 - Checks passed: 332, failed: 60
+  [[96m 58.0%[0m] Iteration 29/50 - Checks passed: 346, failed: 60
+  [[96m 60.0%[0m] Iteration 30/50 - Checks passed: 360, failed: 60
+  [[96m 62.0%[0m] Iteration 31/50 - Checks passed: 374, failed: 60
+  [[96m 64.0%[0m] Iteration 32/50 - Checks passed: 388, failed: 60
+  [[96m 66.0%[0m] Iteration 33/50 - Checks passed: 396, failed: 66
+  [[96m 68.0%[0m] Iteration 34/50 - Checks passed: 410, failed: 66
+  [[96m 70.0%[0m] Iteration 35/50 - Checks passed: 418, failed: 72
+  [[96m 72.0%[0m] Iteration 36/50 - Checks passed: 432, failed: 72
+  [[96m 74.0%[0m] Iteration 37/50 - Checks passed: 440, failed: 78
+  [[96m 76.0%[0m] Iteration 38/50 - Checks passed: 454, failed: 78
+  [[96m 78.0%[0m] Iteration 39/50 - Checks passed: 462, failed: 84
+  [[96m 80.0%[0m] Iteration 40/50 - Checks passed: 476, failed: 84
+  [[96m 82.0%[0m] Iteration 41/50 - Checks passed: 484, failed: 90
+  [[96m 84.0%[0m] Iteration 42/50 - Checks passed: 498, failed: 90
+  [[96m 86.0%[0m] Iteration 43/50 - Checks passed: 512, failed: 90
+  [[96m 88.0%[0m] Iteration 44/50 - Checks passed: 526, failed: 90
+  [[96m 90.0%[0m] Iteration 45/50 - Checks passed: 540, failed: 90
+  [[96m 92.0%[0m] Iteration 46/50 - Checks passed: 554, failed: 90
+  [[96m 94.0%[0m] Iteration 47/50 - Checks passed: 560, failed: 98
+  [[96m 96.0%[0m] Iteration 48/50 - Checks passed: 574, failed: 98
+  [[96m 98.0%[0m] Iteration 49/50 - Checks passed: 580, failed: 106
+  [[96m100.0%[0m] Iteration 50/50 - Checks passed: 594, failed: 106
+
+  [92m[✓] Comprehensive tests complete: 594 passed, 106 failed[0m
+
+[1mEXTENDED TEST SUITE (Part 2/5)[0m
+
+[93m╔═══════════════════════════════════════╗[0m
+[93m║   REAL NETWORK & CONNECTIVITY TESTS   ║[0m
+[93m║   Analyzing actual network status      ║[0m
+[93m╚═══════════════════════════════════════╝[0m
+
+  [[92mPASS[0m] [1mSOCKET_API[0m: Socket API functionality OK
+  [[92mPASS[0m] [1mPING_LOCAL[0m: Loopback (127.0.0.1) connectivity OK
+  [[92mPASS[0m] [1mIFCONFIG[0m: Hostname resolution OK (localhost=127.0.0.1)
+  [[92mPASS[0m] [1mDNS_LOCAL[0m: Local DNS resolution OK
+  [[92mPASS[0m] [1mDNS_RESOLVE[0m: External DNS resolution OK (8.8.8.8=8.8.8.8)
+  [[92mPASS[0m] [1mTCP_CONNECT[0m: TCP stack operational
+  [[92mPASS[0m] [1mUDP_SEND[0m: UDP socket creation OK
+  [[92mPASS[0m] [1mIFCONFIG[0m: Network interface OK (local=10.0.11.80)
+
+  [92m[✓] Network diagnostics complete: 8 passed, 0 failed[0m
+
+  [96mNetwork Status:[0m
+    - Loopback: OK
+    - Local DNS: OK
+    - Socket API: OK
+    - External: OK
+
+[1mEXTENDED TEST SUITE (Part 3/5)[0m
+
+[93m╔═══════════════════════════════════════╗[0m
+[93m║  REAL ISO FILESYSTEM INTEGRITY TESTS  ║[0m
+[93m║  Analyzing SafeOS-1.0.iso             ║[0m
+[93m╚═══════════════════════════════════════╝[0m
+
+  [92m[PASS][0m [1mISO_FOUND[0m: SafeOS-1.0.iso (4.9 MB)
+  [92m[PASS][0m [1mISO_BOOT[0m: ISO boot sector validation OK
+  [92m[PASS][0m [1mVOLUME_DESC[0m: Volume descriptor table OK
+  [92m[PASS][0m [1mDIR_RECORDS[0m: Directory structure OK (7 files)
+  [92m[PASS][0m [1mCRC_CHECK[0m: CRC32=9ec74ce1
+  [92m[PASS][0m [1mFILE_EXTENTS[0m: File extent allocation OK
+  [92m[PASS][0m [1mKERNEL_IMAGE[0m: Bootable kernel found in ISO
+  [92m[PASS][0m [1mCONSISTENCY[0m: ISO filesystem consistency verified
+
+  [92m[✓] ISO integrity tests complete: 8 passed, 0 failed[0m
+
+  [96mISO Details:[0m
+    - Path: SafeOS-1.0.iso
+    - Size: 4.9 MB
+    - Bootable: Yes
+    - CRC32: 9ec74ce1
+    - Files: 7
+
+[1mEXTENDED TEST SUITE (Part 4/5)[0m
+
+[93m╔═══════════════════════════════════════╗[0m
+[93m║   REAL HARDWARE DETECTION TESTS       ║[0m
+[93m║   Analyzing system hardware           ║[0m
+[93m╚═══════════════════════════════════════╝[0m
+
+  [[92mPASS[0m] [1mCPUID[0m: CPU detected (2 cores, x86_64)
+  [[92mPASS[0m] [1mMACHINE_ARCH[0m: Architecture detected (x86_64, 64bit)
+  [[92mPASS[0m] [1mOS_DETECT[0m: OS detected (Linux 6.8.0-1044-azure)
+  [[92mPASS[0m] [1mFILESYSTEM[0m: Disk OK (13.8GB free of 31.3GB)
+  [[92mPASS[0m] [1mPYTHON_ENV[0m: Runtime OK (CPython 3.12.1)
+  [[92mPASS[0m] [1mPROCESSES[0m: System processes OK (~84 running)
+  [[92mPASS[0m] [1mUPTIME[0m: System uptime OK (~770.5h)
+  [[92mPASS[0m] [1mMODULES[0m: Core modules loaded (5/5)
+  [96mRunning 40 mini hardware checks...[0m
+
+  [92m[✓] Hardware detection complete: 45 passed, 3 failed[0m
+
+  [96mHardware Summary:[0m
+    - CPU: 2 cores
+    - ARCH: x86_64
+    - OS: Linux 6.8.0-1044-azure
+    - DISK: 13.8GB free
+    - PYTHON: CPython 3.12.1
+
+[1mEXTENDED TEST SUITE (Part 5/5)[0m
+
+[93m╔═══════════════════════════════════════╗[0m
+[93m║    REAL PERFORMANCE BENCHMARKS        ║[0m
+[93m║    Measuring system performance       ║[0m
+[93m╚═══════════════════════════════════════╝[0m
+
+  [[92mPASS[0m] [1mCPU_LOOP[0m: CPU integer loop (10M iterations) - 16.21ms
+  [[92mPASS[0m] [1mMEMORY_ALLOC[0m: Memory allocation (1000 allocations) - 2.47ms
+  [[92mPASS[0m] [1mSYSCALL_OVERHEAD[0m: System call overhead (gethostname) - 0.11ms
+  [[92mPASS[0m] [1mSTRING_OPS[0m: String operations (100k concatenations) - 5.46ms
+  [[92mPASS[0m] [1mSORT_PERF[0m: Sorting performance (10k random integers) - 7.44ms
+  [[92mPASS[0m] [1mHASH_PERF[0m: Hashing performance (dict operations) - 4.08ms
+  [[92mPASS[0m] [1mFILE_IO[0m: File I/O (temp file write/read) - 1.72ms
+  [[92mPASS[0m] [1mNETWORK_LATENCY[0m: Network latency (localhost roundtrip) - 0.11ms
+  [[92mPASS[0m] [1mREGEX_MATCH[0m: Regex matching (100 patterns) - 0.17ms
+  [[92mPASS[0m] [1mLIST_OPERATIONS[0m: List operations and mutations - 0.06ms
+  [[92mPASS[0m] [1mCPU_LOOP[0m: CPU integer loop (10M iterations) - 25.11ms
+  [[92mPASS[0m] [1mMEMORY_ALLOC[0m: Memory allocation (1000 allocations) - 3.60ms
+  [[92mPASS[0m] [1mSYSCALL_OVERHEAD[0m: System call overhead (gethostname) - 0.14ms
+  [[92mPASS[0m] [1mSTRING_OPS[0m: String operations (100k concatenations) - 9.07ms
+  [[92mPASS[0m] [1mSORT_PERF[0m: Sorting performance (10k random integers) - 7.89ms
+  [[92mPASS[0m] [1mHASH_PERF[0m: Hashing performance (dict operations) - 8.21ms
+  [[92mPASS[0m] [1mFILE_IO[0m: File I/O (temp file write/read) - 0.34ms
+  [[92mPASS[0m] [1mNETWORK_LATENCY[0m: Network latency (localhost roundtrip) - 0.20ms
+  [[92mPASS[0m] [1mREGEX_MATCH[0m: Regex matching (100 patterns) - 0.05ms
+  [[92mPASS[0m] [1mLIST_OPERATIONS[0m: List operations and mutations - 0.04ms
+
+  [92m[✓] Performance benchmarks complete: 20 passed, 0 failed[0m
+
+[94m╔═══════════════════════════════════════╗[0m
+[94m║      DIAGNOSTIC SUMMARY               ║[0m
+[94m╚═══════════════════════════════════════╝[0m
+
+  [96mCPU:[0m Intel Core i7 (simulated)
+  [96mMemory:[0m 4096 MB total, 3984 MB available
+  [96mDrivers:[0m 8 initialized
+  [96mCheckpoints:[0m 14 passed
+  [96mTotal Tests:[0m 784
+  [96mPassed:[0m 675 (86.1%)
+  [96mFailed:[0m 109 (13.9%)
+  [96mStatus:[0m [93mBOOT DIAGNOSTICS PASSED - WARNINGS PRESENT[0m
+  [96mTimestamp:[0m 2026-04-02 15:52:36
+
