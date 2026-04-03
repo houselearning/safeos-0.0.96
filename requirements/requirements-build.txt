@@ -1,0 +1,10 @@
+# Build tools and compilers
+# Install via OS package manager (apt, brew, yum, etc.)
+
+make
+nasm
+gcc
+pkg-config
+libc6-dev
+python3
+python3-pip

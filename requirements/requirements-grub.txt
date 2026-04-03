@@ -1,0 +1,5 @@
+# GRUB bootloader utilities
+# Install via OS package manager (apt, brew, yum, etc.)
+
+grub-pc-bin
+grub-efi-amd64-bin

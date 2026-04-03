@@ -1,0 +1,5 @@
+# Optional utilities for testing and development
+# Install via OS package manager (apt, brew, yum, etc.)
+
+git
+util-linux

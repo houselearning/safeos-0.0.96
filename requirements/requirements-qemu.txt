@@ -1,0 +1,4 @@
+# QEMU emulator
+# Install via OS package manager (apt, brew, yum, etc.)
+
+qemu-system-x86
