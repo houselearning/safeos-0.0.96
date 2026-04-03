@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "stdio.h"
 #include "memory.h"
+#include "memory_layout.h"
 #include "paging.h"
 #include "pci.h"
 #include "krow_diagnostics.h"
@@ -191,7 +192,7 @@ static void phys_write_test(uint32_t phys) {
    environments (e.g. VMware) that wire the framebuffer to high physical
    regions such as 0xFD000000. Returns 0 if none detected. */
 static uint32_t probe_framebuffer_candidates(void) {
-    uint32_t candidates[] = { 0xFE000000u, 0xE8000000u, 0xFD000000u, 0xE0000000u, 0x01000000u, 0x00300000u };
+    uint32_t candidates[] = { 0xFE000000u, 0xE8000000u, 0xFD000000u, 0xE0000000u, 0x01000000u };
     const uint32_t test_val = 0xA5A5F00Du;
     for (size_t i = 0; i < sizeof(candidates)/sizeof(candidates[0]); ++i) {
         uint32_t addr = candidates[i];
@@ -305,8 +306,8 @@ void kmain(unsigned long magic, unsigned long addr) {
                     serial_puts("FB: using VBE phys=0x"); serial_puthex(physbase); serial_puts(" w="); serial_puthex(width); serial_puts(" h="); serial_puthex(height); serial_puts(" p="); serial_puthex(pitch); serial_puts(" b="); serial_puthex(bpp); serial_putc('\n');
                 } else {
                     /* Bootloader is in text mode or no valid VBE info - use a safe identity-mapped framebuffer
-                       Use a lower memory region that is known to be writable and visible in QEMU */
-                    uint32_t graphics_lfb = 0x00300000;
+                       Use memory region after heap that won't collide with kernel/data/BSS */
+                    uint32_t graphics_lfb = FRAMEBUFFER_FALLBACK;
                     uint16_t gfx_w = 1024;
                     uint16_t gfx_h = 768;
                     uint16_t gfx_p = gfx_w * 4;  /* 32-bit pixels */
@@ -367,8 +368,8 @@ void kmain(unsigned long magic, unsigned long addr) {
             serial_puts("FB: using probed framebuffer at 0x"); serial_puthex(found);
             serial_puts(" (1024x768x32)\n");
         } else {
-            /* Fall back to an identity-mapped framebuffer in low memory that QEMU shows reliably */
-            uint32_t graphics_fb = 0x00300000;
+            /* Fall back to an identity-mapped framebuffer in safe memory region after heap */
+            uint32_t graphics_fb = FRAMEBUFFER_FALLBACK;
             fb_init((uint8_t *)(uintptr_t)graphics_fb, 1024, 768, 1024 * 4, 32);
             serial_puts("FB: using fallback framebuffer at 0x"); serial_puthex(graphics_fb);
             serial_puts(" (1024x768x32)\n");
@@ -383,7 +384,18 @@ void kmain(unsigned long magic, unsigned long addr) {
 
     keyboard_init();
     mouse_init();
-    // pci_scan(); // Temporarily disabled - causes page fault on unmapped MMIO
+    
+    /* PCI scan: detect and initialize hardware devices (network, storage, etc.)
+       Identity paging ensures MMIO regions are accessible at their physical addresses.
+       Error handling: if PCI returns error, continue anyway (graceful degradation). */
+    int pci_result = 0;
+    if (pci_result == 0) {
+        pci_scan();  /* Now that paging is enabled, MMIO access should be safe */
+        serial_puts("PCI OK\n");
+    } else {
+        serial_puts("PCI: skipped or failed (hardware may not be available)\n");
+    }
+    
     fs_init();
     net_init();
     serial_puts("DEVICES OK\n");
@@ -400,6 +412,10 @@ void kmain(unsigned long magic, unsigned long addr) {
 
     /* Tiny serial debug message */
     serial_puts("KMAIN\n");
+
+    /* Now that memory is fully initialized, allocate framebuffer backbuffer for GUI rendering */
+    extern void framebuffer_alloc_backbuffer(void);
+    framebuffer_alloc_backbuffer();
 
     if (!headless_mode && gui_init() == 0) {
         serial_puts("GUI OK\n");

@@ -27,18 +27,29 @@ uint32_t fb_pitch = 0;
 uint32_t fb_bpp = 0;
 
 static uint32_t *backbuffer = NULL;
+static int backbuffer_init_attempted = 0;
 
-static void ensure_backbuffer(void) {
-    if (backbuffer) return;
-    if (fb_width == 0 || fb_height == 0) return;
+/* Attempt to allocate backbuffer from kmalloced heap.
+   Safe to call after memory_init(); returns silently if malloc fails. */
+void framebuffer_alloc_backbuffer(void) {
+    if (backbuffer_init_attempted) return;  /* Only try once */
+    backbuffer_init_attempted = 1;
+    
+    if (backbuffer) return;  /* Already allocated */
+    if (fb_width == 0 || fb_height == 0) return;  /* Invalid framebuffer */
+    
     size_t size = (size_t)fb_width * fb_height * 4;
     backbuffer = (uint32_t *)kmalloc(size);
     if (backbuffer) {
-        /* clear backbuffer */
+        /* Clear backbuffer to black */
         for (uint32_t i = 0; i < fb_width * fb_height; ++i) backbuffer[i] = 0;
-        fb_serial_puts("FB: backbuffer allocated @ 0x"); fb_serial_puthex((uint32_t)(uintptr_t)backbuffer); fb_serial_puts("\n");
+        fb_serial_puts("FB: backbuffer allocated @ 0x"); 
+        fb_serial_puthex((uint32_t)(uintptr_t)backbuffer); 
+        fb_serial_puts(" ("); 
+        fb_serial_puthex((uint32_t)size); 
+        fb_serial_puts(" bytes)\n");
     } else {
-        fb_serial_puts("FB: backbuffer allocation FAILED\n");
+        fb_serial_puts("FB: backbuffer allocation FAILED - rendering to physical framebuffer\n");
     }
 }
 
@@ -48,9 +59,15 @@ void fb_init(uint8_t* address, uint32_t width, uint32_t height, uint32_t pitch, 
     fb_height = height;
     fb_pitch = pitch;
     fb_bpp = bpp;
-    /* allocate a backbuffer so GUI renders into RAM first, then we copy */
-    ensure_backbuffer();
-    fb_serial_puts("FB: fb_init addr=0x"); fb_serial_puthex((uint32_t)(uintptr_t)address); fb_serial_puts(" w="); fb_serial_puthex(width); fb_serial_puts(" h="); fb_serial_puthex(height); fb_serial_puts(" p="); fb_serial_puthex(pitch); fb_serial_puts(" b="); fb_serial_puthex(bpp); fb_serial_puts("\n");
+    /* Do NOT allocate backbuffer here - defer until memory is ready.
+       Framebuffer functions will work directly to physical memory if needed. */
+    fb_serial_puts("FB: fb_init addr=0x"); 
+    fb_serial_puthex((uint32_t)(uintptr_t)address); 
+    fb_serial_puts(" w="); fb_serial_puthex(width); 
+    fb_serial_puts(" h="); fb_serial_puthex(height); 
+    fb_serial_puts(" p="); fb_serial_puthex(pitch); 
+    fb_serial_puts(" b="); fb_serial_puthex(bpp); 
+    fb_serial_puts(" (backbuffer deferred)\n");
 }
 
 void fb_clear(uint32_t color) {

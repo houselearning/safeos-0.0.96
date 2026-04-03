@@ -13,6 +13,9 @@ extern uint32_t fb_bpp;
 // Initialize framebuffer (you implement this in framebuffer.c)
 void fb_init(uint8_t* address, uint32_t width, uint32_t height, uint32_t pitch, uint32_t bpp);
 
+// Allocate backbuffer from heap (safe to call after memory_init)
+void framebuffer_alloc_backbuffer(void);
+
 // Draw a pixel (signed coords to guard against negative positions)
 void fb_putpixel(int x, int y, uint32_t color);
 

@@ -4,10 +4,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// Initialize memory management
+/* Memory layout definitions */
+#include "memory_layout.h"
+
+/* Initialize memory management */
 void memory_init(void);
 
-// Kernel heap allocation
+/* Kernel heap allocation */
 void *kmalloc(size_t size);
 void kfree(void *ptr);
 
