@@ -1,5 +1,5 @@
 .set MULTIBOOT_MAGIC,    0x1BADB002
-.set MULTIBOOT_FLAGS,    0x00000003  # request memory info + video mode
+.set MULTIBOOT_FLAGS,    0x00000003  # request module align + memory info (NO video mode - avoid GRUB graphics issues)
 .set MULTIBOOT_CHECKSUM, -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
 # --------------------------------------------------
@@ -10,16 +10,11 @@
 .long MULTIBOOT_MAGIC
 .long MULTIBOOT_FLAGS
 .long MULTIBOOT_CHECKSUM
-# (Additional fields are only needed if you set the corresponding flags.)
-# .long 0  # header_addr
-# .long 0  # load_addr
-# .long 0  # load_end_addr
-# .long 0  # bss_end_addr
-# .long 0  # entry_addr
-# .long 0  # mode_type: 0 = graphics
-# .long 1024  # width
-# .long 768   # height
-# .long 32    # depth
+.long 0  # header_addr (unused)
+.long 0  # load_addr (leave loader defaults)
+.long 0  # load_end_addr
+.long 0  # bss_end_addr
+.long 0  # entry_addr
 
 # --------------------------------------------------
 # Code
@@ -29,9 +24,48 @@
 .extern kmain
 
 _start:
-    cli                         # interrupts OFF
+    # ===========================================
+    # CHECKPOINT 0: Entry point
+    # Absolutely minimal code - no BIOS calls
+    # ===========================================
+    
+    # Write directly to VGA memory (0xB8000)
+    # This is the most reliable method
+    mov $0xB8000, %ecx
+    
+    # "E" at offset 0
+    mov $0x0F45, %ax
+    mov %ax, (%ecx)
+    
+    # "N" at offset 2  
+    mov $0x0F4E, %ax
+    mov %ax, 2(%ecx)
+    
+    # "T" at offset 4
+    mov $0x0F54, %ax
+    mov %ax, 4(%ecx)
+    
+    # "R" at offset 6
+    mov $0x0F52, %ax
+    mov %ax, 6(%ecx)
+    
+    # Serial output - COM1 port 0x3F8
+    # This works in any mode
+    mov $0x3F8, %dx
+    mov $'E', %al
+    outb %al, %dx
+    mov $'N', %al
+    outb %al, %dx
+    mov $'T', %al
+    outb %al, %dx
+    mov $'R', %al
+    outb %al, %dx
+    
+    # Now disable interrupts
+    cli
 
     # Load our own GDT
+    # During boot, we're loaded at 0x10000, so labels should have correct addresses
     lgdt gdt_descriptor
 
     # Reload data segments
@@ -46,13 +80,26 @@ _start:
     ljmp $CODE_SEL, $flush_cs
 
 flush_cs:
+    # ===========================================
+    # CHECKPOINT 1: After segment reload
+    # ===========================================
+    mov $0xB8000, %ecx
+    mov $0x0F31, %ax           # '1' in white on black
+    mov %ax, 8(%ecx)
+    
+    # Serial: send '1'
+    mov $0x3F8, %dx
+    mov $'1', %al
+    outb %al, %dx
     # Valid stack AFTER SS is loaded
     mov $stack_top, %esp
 
-    # Early serial tick (COM1)
-    mov $0x3F8, %dx
-    mov $'S', %al
-    outb %al, %dx
+    # ===========================================
+    # CHECKPOINT 2: Stack setup complete
+    # ===========================================
+    mov $0xB8000, %ecx
+    mov $0x0F32, %ax           # '2' in white
+    mov %ax, 10(%ecx)
 
     # Multiboot ABI:
     # eax = magic
@@ -60,11 +107,11 @@ flush_cs:
     push %ebx
     push %eax
     call kmain
-
-.hang:
+    
+    # Should never return from kmain
     cli
     hlt
-    jmp .hang
+    jmp .
 
 # --------------------------------------------------
 # Global Descriptor Table

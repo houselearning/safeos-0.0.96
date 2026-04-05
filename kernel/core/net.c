@@ -11,6 +11,20 @@ void net_init(void) {
     initialized = true;
 }
 
+// Simple DNS resolution stub - only handles localhost
+uint32_t net_resolve(const char *hostname) {
+    if (strcmp(hostname, "localhost") == 0) {
+        return 0x7F000001; // 127.0.0.1
+    }
+    return 0; // Resolution failed
+}
+
+// Simple TCP connect stub - always fails in kernel without full stack
+int net_tcp_connect(uint32_t ip, uint16_t port) {
+    (void)ip; (void)port;
+    return -1; // Not implemented
+}
+
 // Attempt to perform a very small, self-contained HTTP GET operation.
 // This implementation does not rely on a full TCP/IP stack provided
 // by userland; instead it performs basic input validation and returns
@@ -53,9 +67,14 @@ int net_http_get(const char *url, char *buffer, int maxlen) {
     memcpy(host, p, hostlen);
     host[hostlen] = '\0';
 
-    // TODO: name resolution and TCP connect would go here. At present
-    // we return -1 to indicate the requested URL cannot be fetched.
-    (void)host; (void)port;
+    // Attempt DNS resolution and TCP connection
+    uint32_t ip = net_resolve(host);
+    if (ip == 0) return -1;
+    
+    int sock = net_tcp_connect(ip, port);
+    if (sock < 0) return -1;
+    
+    // Would send HTTP request here, but since no full stack, fail
     return -1;
 #else
     // Networking not available in this build

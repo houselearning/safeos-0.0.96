@@ -10,6 +10,9 @@ extern uint32_t fb_height;
 extern uint32_t fb_pitch;
 extern uint32_t fb_bpp;
 
+// Backbuffer for double-buffered rendering
+extern uint32_t *backbuffer;
+
 // Initialize framebuffer (you implement this in framebuffer.c)
 void fb_init(uint8_t* address, uint32_t width, uint32_t height, uint32_t pitch, uint32_t bpp);
 

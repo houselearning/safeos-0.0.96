@@ -10,7 +10,13 @@ static char buffer[4096];
 static int len = 0;
 
 void notepad_open(const char *path) {
-    if (win) return; // already open
+    if (win) {
+        if (window_is_minimized(win) || !window_is_visible(win)) {
+            window_restore(win);
+            return;
+        }
+        return; // already open
+    }
     win = window_create("Notepad", 80, 80, 500, 400);
     if (path) {
         len = fs_read_file(path, buffer, sizeof(buffer)-1);
@@ -22,7 +28,7 @@ void notepad_open(const char *path) {
 }
 
 void notepad_handle_event(gui_event_t *ev) {
-    if (!win) return;
+    if (!win || window_is_minimized(win) || !window_is_visible(win)) return;
     if (ev->type == KEY_CHAR) {
         if (ev->ch == 8) { // backspace
             if (len > 0) len--;
@@ -34,7 +40,7 @@ void notepad_handle_event(gui_event_t *ev) {
 }
 
 void notepad_draw(void) {
-    if (!win) return;
+    if (!win || window_is_minimized(win) || !window_is_visible(win)) return;
     window_draw(win);
     // draw text
     int x = win->x + 5;

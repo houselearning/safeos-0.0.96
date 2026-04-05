@@ -25,12 +25,19 @@ static void refresh_entries(void) {
 
 void file_explorer_open(const char *path) {
     (void)path;
+    if (win) {
+        if (window_is_minimized(win) || !window_is_visible(win)) {
+            window_restore(win);
+            return;
+        }
+        return;
+    }
     win = window_create("File Explorer - A:/", 50, 50, 600, 400);
     refresh_entries();
 }
 
 void file_explorer_handle_event(gui_event_t *ev) {
-    if (!win) return;
+    if (!win || window_is_minimized(win) || !window_is_visible(win)) return;
 
     int list_x = win->x + 10;
     int list_y = win->y + 30;

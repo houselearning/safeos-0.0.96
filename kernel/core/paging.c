@@ -37,3 +37,16 @@ void paging_enable_identity_4mb(void) {
     /* Step 4: Explicit TLB flush to ensure all old TLB entries are cleared */
     FLUSH_TLB();
 }
+
+void paging_map_4mb(uint32_t virt_addr, uint32_t phys_addr, uint32_t flags) {
+    if ((virt_addr & 0x003FFFFFu) || (phys_addr & 0x003FFFFFu)) {
+        return; /* Must be 4MB aligned with 4MB pages */
+    }
+
+    uint32_t index = virt_addr >> 22;
+    if (index >= 1024) return;
+
+    /* Accept flags: present/rw/user; always add PS bit for 4MB page */
+    page_directory[index] = (phys_addr & 0xFFC00000u) | (flags & 0xFFFu) | 0x80u;
+    FLUSH_TLB();
+}

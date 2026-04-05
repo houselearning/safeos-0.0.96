@@ -21,12 +21,9 @@ void text_desktop_run(void) {
     vga_puts(7, 2, "If you see this, the kernel reached the desktop fallback.", 0x07);
     vga_puts(9, 2, "Press Ctrl+Alt to grab/release the mouse in your VM.", 0x07);
     vga_puts(11, 2, "Think you know the fix? https://github.com/houselearning/safeos-0.0.96", 0x07);
-    /* Halt here to keep the screen visible. Use `hlt` without `cli`
-       so the guest doesn't disable interrupts then halt (which some
-       hypervisors treat as a shutdown request). */
-    for (;;) {
-        __asm__ __volatile__("hlt");
-    }
+    /* Return to main boot path instead of halting, to avoid hypervisor shutdown.
+       This allows the desktop to keep running and keep the VM online. */
+    return;
 }
 
 /* Read a byte from an I/O port */
