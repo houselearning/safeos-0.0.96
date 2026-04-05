@@ -29,7 +29,13 @@ static button_t buttons[] = {
 
 void calculator_open(const char *path) {
     (void)path;
-    if (win) return;
+    if (win) {
+        if (window_is_minimized(win) || !window_is_visible(win)) {
+            window_restore(win);
+            return;
+        }
+        return;
+    }
     win = window_create("Calculator", 120, 120, 300, 400);
     strcpy(display, "0");
     expr[0] = '\0';
@@ -37,7 +43,7 @@ void calculator_open(const char *path) {
 }
 
 void calculator_handle_event(gui_event_t *ev) {
-    if (!win) return;
+    if (!win || window_is_minimized(win) || !window_is_visible(win)) return;
     if (ev->type == MOUSE_DOWN && ev->button == 1) {
         int mx = cursor_get_x() - win->x;
         int my = cursor_get_y() - win->y;
@@ -56,9 +62,7 @@ void calculator_handle_event(gui_event_t *ev) {
                     // Simple expression evaluator: tokenize integers and ops
                     const char *p = expr;
                     int values[32]; int vtop = 0;
-                    char ops[32]; int otop = 0;
 
-                    auto_apply_op:
                     while (*p == ' ') p++;
                     // Parse first number
                     int sign = 1;

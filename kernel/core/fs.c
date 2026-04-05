@@ -29,7 +29,7 @@ int fs_init(void) {
 }
 
 int fs_list(const char *path, fs_entry_t *out, int max) {
-    if (strcmp(path, "A:/") != 0) return 0;
+    if (strcmp(path, "A:/") != 0) return FS_EINVAL;
     int count = 0;
     for (int i = 0; i < MAX_FILES && count < max; i++) {
         if (files[i].exists) {
@@ -50,7 +50,7 @@ int fs_read_file(const char *path, void *buf, uint32_t max) {
             return to_copy;
         }
     }
-    return -1;
+    return FS_ENOENT;
 }
 
 int fs_write_file(const char *path, const void *buf, uint32_t size) {
@@ -59,7 +59,7 @@ int fs_write_file(const char *path, const void *buf, uint32_t size) {
             uint32_t to_copy = size < sizeof(files[i].content) ? size : sizeof(files[i].content);
             memcpy(files[i].content, buf, to_copy);
             files[i].size = to_copy;
-            return 0;
+            return FS_SUCCESS;
         }
     }
     // Create new
@@ -70,31 +70,37 @@ int fs_write_file(const char *path, const void *buf, uint32_t size) {
             memcpy(files[i].content, buf, to_copy);
             files[i].size = to_copy;
             files[i].exists = 1;
-            return 0;
+            return FS_SUCCESS;
         }
     }
-    return -1;
+    return FS_ENOSPC;
 }
 
 int fs_create_file(const char *path) {
+    // Check if already exists
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (files[i].exists && strcmp(files[i].name, path) == 0) {
+            return FS_EEXIST;
+        }
+    }
     for (int i = 0; i < MAX_FILES; i++) {
         if (!files[i].exists) {
             strcpy(files[i].name, path);
             files[i].content[0] = '\0';
             files[i].size = 0;
             files[i].exists = 1;
-            return 0;
+            return FS_SUCCESS;
         }
     }
-    return -1;
+    return FS_ENOSPC;
 }
 
 int fs_delete_file(const char *path) {
     for (int i = 0; i < MAX_FILES; i++) {
         if (files[i].exists && strcmp(files[i].name, path) == 0) {
             files[i].exists = 0;
-            return 0;
+            return FS_SUCCESS;
         }
     }
-    return -1;
+    return FS_ENOENT;
 }

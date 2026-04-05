@@ -16,13 +16,19 @@ static int sel_row = 0, sel_col = 0;
 
 void spreadsheet_open(const char *path) {
     (void)path;
-    if (win) return;
+    if (win) {
+        if (window_is_minimized(win) || !window_is_visible(win)) {
+            window_restore(win);
+            return;
+        }
+        return;
+    }
     win = window_create("Spreadsheet", 150, 150, 700, 500);
     memset(cells, 0, sizeof(cells));
 }
 
 void spreadsheet_handle_event(gui_event_t *ev) {
-    if (!win) return;
+    if (!win || window_is_minimized(win) || !window_is_visible(win)) return;
     if (ev->type == MOUSE_DOWN && ev->button == 1) {
         int mx = cursor_get_x() - win->x;
         int my = cursor_get_y() - win->y;

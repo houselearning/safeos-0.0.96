@@ -7,6 +7,7 @@ LD       = i686-elf-ld
 AS       = i686-elf-as
 
 CFLAGS   = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Ikernel
+# Build as ELF for GRUB multiboot compliance; keep multiboot header in first 8KB.
 LDFLAGS  = -T linker.ld -nostdlib
 
 SRC_C = $(shell find kernel -name '*.c')

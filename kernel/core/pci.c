@@ -31,13 +31,18 @@ static uint32_t pci_read32(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offs
     return inl(PCI_CONFIG_DATA);
 }
 
+uint8_t pci_config_read8(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+    uint32_t data = pci_read32(bus, slot, func, offset & 0xFC);
+    return (data >> ((offset & 3) * 8)) & 0xFF;
+}
+
 uint16_t pci_config_read16(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
-    uint32_t data = pci_read32(bus, slot, func, offset);
+    uint32_t data = pci_read32(bus, slot, func, offset & 0xFC);
     return (data >> ((offset & 2) * 8)) & 0xFFFF;
 }
 
 uint32_t pci_config_read32(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
-    return pci_read32(bus, slot, func, offset);
+    return pci_read32(bus, slot, func, offset & 0xFC);
 }
 
 void pci_scan(void) {

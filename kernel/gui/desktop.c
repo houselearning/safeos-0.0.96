@@ -9,23 +9,61 @@
 #include "apps/browser.h"
 #include "gui.h"
 #include <stddef.h>
+#include "../core/stdio.h"
 
 static int show_startup = 1;
+static const int TASKBAR_H = 50;
 
-/* Desktop layout constants matching the provided mockup */
-static const int APP_ICON_X = 20;
-static const int APP_ICON_Y = 20;
-static const int APP_ICON_W = 80;
-static const int APP_ICON_H = 80;
+static uint32_t desktop_rgb(uint8_t r, uint8_t g, uint8_t b) {
+    return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+}
 
-/* Taskbar constants */
-static const int TASKBAR_H = 42;
+static void desktop_draw_wallpaper(void) {
+    /* Soft, light panels for depth and polish */
+    int panel_w = fb_width / 3;
+    int panel_h = fb_height / 7;
+    for (int i = 0; i < 3; ++i) {
+        int x = 48 + i * (panel_w + 16);
+        int y = fb_height / 6 + (i % 2) * 24;
+        gui_draw_rect(x, y, panel_w, panel_h, desktop_rgb(0x3A, 0x60, 0xA0));
+        gui_draw_rect(x + 8, y + 8, panel_w - 16, panel_h - 16, desktop_rgb(0x55, 0x7C, 0xC8));
+    }
+}
+
+static void desktop_draw_icon(int x, int y, const char *label, uint32_t color) {
+    gui_draw_rect(x, y, 72, 72, 0x2F3F6C);
+    gui_draw_rect(x + 2, y + 2, 68, 68, color);
+    gui_draw_rect(x + 6, y + 6, 60, 18, color);
+    gui_draw_rect(x + 10, y + 28, 52, 28, 0xFFFFFF);
+    gui_draw_rect(x + 18, y + 36, 36, 12, color);
+    gui_draw_rect(x - 2, y + 74, 76, 16, 0x182139);
+    gui_draw_text(x + 6, y + 76, label, 0xFFFFFF, 0x182139);
+}
+
+static void desktop_draw_start_button(int taskbar_top) {
+    int button_x = 14;
+    int button_y = taskbar_top + 10;
+    gui_draw_rect(button_x, button_y, 100, 30, 0x2A6EFE);
+    gui_draw_rect(button_x + 2, button_y + 2, 96, 26, 0x4B8CFF);
+    gui_draw_text(button_x + 14, button_y + 8, "Start", 0xFFFFFF, 0x4B8CFF);
+}
+
+static void desktop_draw_system_tray(int taskbar_top) {
+    int tray_x = fb_width - 224;
+    int tray_y = taskbar_top + 10;
+    gui_draw_rect(tray_x, tray_y, 214, 30, 0x232A34);
+    gui_draw_rect(tray_x + 8, tray_y + 6, 16, 16, 0x4B88FF);
+    gui_draw_rect(tray_x + 28, tray_y + 6, 16, 16, 0x5DD25C);
+    gui_draw_rect(tray_x + 48, tray_y + 6, 16, 16, 0xF2C94C);
+    gui_draw_text(tray_x + 74, tray_y + 8, "11:42", 0xFFFFFF, 0x232A34);
+    gui_draw_text(tray_x + 140, tray_y + 8, "WiFi", 0xFFFFFF, 0x232A34);
+    gui_draw_text(tray_x + 140, tray_y + 18, "Vol 44%", 0xBBBBBB, 0x232A34);
+}
 
 void desktop_show_startup_screen(const char *title, const char *msg) {
     framebuffer_clear(0x000000);
     gui_draw_text(100, 100, title, 0xFFFFFF, 0x000000);
     gui_draw_text(100, 120, msg, 0xFFFFFF, 0x000000);
-    // fake progress
     gui_draw_rect(100, 140, 200, 10, 0xFFFFFF);
     gui_draw_rect(102, 142, 196, 6, 0x0000FF);
 }
@@ -37,113 +75,121 @@ void desktop_init_home(void) {
 void desktop_handle_event(gui_event_t *ev) {
     if (show_startup) return;
 
-    if (ev->type == MOUSE_DOWN && ev->button == 1) { // Left click
-        int mx = cursor_get_x();
-        int my = cursor_get_y();
-        /* Top-left app icon */
-        if (mx >= APP_ICON_X && mx < APP_ICON_X + APP_ICON_W &&
-            my >= APP_ICON_Y && my < APP_ICON_Y + APP_ICON_H) {
-            notepad_open(NULL);
+    if (ev->type == MOUSE_DOWN) {
+        if (window_handle_title_bar_click(ev->x, ev->y)) {
             return;
         }
-
-        /* Taskbar small icon (left) */
-        int tb_icon_x = 8;
-        int tb_icon_y = fb_height - TASKBAR_H + 6;
-        int tb_icon_w = 32;
-        int tb_icon_h = 32;
-        if (mx >= tb_icon_x && mx < tb_icon_x + tb_icon_w &&
-            my >= tb_icon_y && my < tb_icon_y + tb_icon_h) {
-            file_explorer_open(NULL);
-            return;
-        }
-
-        /* Start button (approximate circle hit test) */
-        int start_cx = fb_width / 2;
-        int start_cy = fb_height - TASKBAR_H / 2;
-        int start_r = 22;
-        int dx = mx - start_cx;
-        int dy = my - start_cy;
-        if (dx * dx + dy * dy <= start_r * start_r) {
-            browser_open(NULL);
-            return;
-        }
-    } else if (ev->type == KEY_CHAR) {
-        extern void notepad_handle_event(gui_event_t *ev);
-        notepad_handle_event(ev);
     }
 
-    /* Forward other mouse/key events to open app windows */
-    if (ev->type == MOUSE_DOWN || ev->type == MOUSE_UP || ev->type == MOUSE_MOVE) {
-        extern void calculator_handle_event(gui_event_t *ev);
+    if (ev->type == MOUSE_DOWN && ev->button == 1) {
+        static const struct {
+            const char *name;
+            const char *label;
+            uint32_t color;
+            void (*fn)(const char *);
+        } apps[] = {
+            {"Notepad", "Note", 0x64A0FF, notepad_open},
+            {"Calculator", "Calc", 0xFFD23E, calculator_open},
+            {"Spreadsheet", "Sheet", 0x7ED27A, spreadsheet_open},
+            {"Explorer", "Files", 0xF78F3D, file_explorer_open},
+            {"Browser", "Web", 0xA45BFF, browser_open},
+        };
+
+        int icon_x = 24;
+        int icon_y = 24;
+        for (int i = 0; i < (int)(sizeof(apps) / sizeof(apps[0])); ++i) {
+            if (gui_point_in_rect(ev->x, ev->y, icon_x, icon_y, 72, 72)) {
+                apps[i].fn(NULL);
+                return;
+            }
+            icon_y += 106;
+        }
+
+        int taskbar_top = fb_height - TASKBAR_H;
+        int slot_x = 84;
+        for (int i = 0; i < window_count(); ++i) {
+            window_t *win = window_get(i);
+            if (!win) continue;
+            int w = 88;
+            int h = 26;
+            int y = taskbar_top + 12;
+            if (window_is_minimized(win) && gui_point_in_rect(ev->x, ev->y, slot_x, y, w, h)) {
+                window_restore(win);
+                return;
+            }
+            slot_x += w + 8;
+        }
+    }
+
+    if (ev->type == KEY_CHAR) {
+        notepad_handle_event(ev);
         calculator_handle_event(ev);
-        extern void spreadsheet_handle_event(gui_event_t *ev);
         spreadsheet_handle_event(ev);
-        extern void file_explorer_handle_event(gui_event_t *ev);
         file_explorer_handle_event(ev);
-        extern void browser_handle_event(gui_event_t *ev);
         browser_handle_event(ev);
+    }
+
+    if (ev->type == MOUSE_DOWN || ev->type == MOUSE_UP || ev->type == MOUSE_MOVE) {
+        calculator_handle_event(ev);
+        spreadsheet_handle_event(ev);
+        file_explorer_handle_event(ev);
+        browser_handle_event(ev);
+        notepad_handle_event(ev);
     }
 }
 
 void desktop_draw(void) {
     if (show_startup) return;
+    
+    if (!fb_address || fb_width == 0 || fb_height == 0) {
+        return;
+    }
 
-    /* White background (colored-in) */
-    framebuffer_clear(0xFFFFFF);
+    extern uint32_t *backbuffer;
 
-    /* Top-left app icon (outlined) */
-    gui_draw_rect(APP_ICON_X, APP_ICON_Y, APP_ICON_W, APP_ICON_H, 0xFFFFFF);
-    gui_draw_rect(APP_ICON_X, APP_ICON_Y, APP_ICON_W, 1, 0x000000);
-    gui_draw_rect(APP_ICON_X, APP_ICON_Y, 1, APP_ICON_H, 0x000000);
-    gui_draw_rect(APP_ICON_X + APP_ICON_W - 1, APP_ICON_Y, 1, APP_ICON_H, 0x000000);
-    gui_draw_rect(APP_ICON_X, APP_ICON_Y + APP_ICON_H - 1, APP_ICON_W, 1, 0x000000);
-    gui_draw_text(APP_ICON_X + 8, APP_ICON_Y + (APP_ICON_H / 2) - 4, "app icon", 0x000000, 0xFFFFFF);
-    gui_draw_text(APP_ICON_X, APP_ICON_Y + APP_ICON_H + 10, "{app label}", 0x000000, 0xFFFFFF);
+    desktop_draw_wallpaper();
 
-    /* Bottom taskbar */
-    gui_draw_rect(0, fb_height - TASKBAR_H, fb_width, TASKBAR_H, 0x202020);
+    static const struct {
+        const char *name;
+        const char *label;
+        uint32_t color;
+    } icons[] = {
+        {"Notepad", "Note", 0x64A0FF},
+        {"Calculator", "Calc", 0xFFD23E},
+        {"Spreadsheet", "Sheet", 0x7ED27A},
+        {"Explorer", "Files", 0xF78F3D},
+        {"Browser", "Web", 0xA45BFF},
+    };
 
-    /* Left: small image icon on taskbar */
-    int tb_icon_x = 8;
-    int tb_icon_y = fb_height - TASKBAR_H + 6;
-    int tb_icon_w = 32;
-    int tb_icon_h = 32;
-    gui_draw_rect(tb_icon_x, tb_icon_y, tb_icon_w, tb_icon_h, 0xFFFFFF);
-    gui_draw_rect(tb_icon_x, tb_icon_y, tb_icon_w, 1, 0x000000);
-    gui_draw_rect(tb_icon_x, tb_icon_y, 1, tb_icon_h, 0x000000);
-    gui_draw_rect(tb_icon_x + tb_icon_w - 1, tb_icon_y, 1, tb_icon_h, 0x000000);
-    gui_draw_text(tb_icon_x + tb_icon_w + 8, tb_icon_y + 8, "_  app on taskbar. when clicked, open app.", 0xFFFFFF, 0x202020);
+    int icon_x = 32;
+    int icon_y = 28;
+    for (int i = 0; i < (int)(sizeof(icons) / sizeof(icons[0])); ++i) {
+        desktop_draw_icon(icon_x, icon_y, icons[i].label, icons[i].color);
+        icon_y += 106;
+    }
 
-    /* Center: circular Start button */
-    int start_cx = fb_width / 2;
-    int start_cy = fb_height - TASKBAR_H / 2;
-    int start_r = 22;
-    gui_draw_circle(start_cx + 2, start_cy + 2, start_r + 2, 0x404040);
-    gui_draw_circle(start_cx, start_cy, start_r, 0xC0C0C0);
-    const char *start_label = "start button";
-    int label_len = 0; const char *p = start_label; while (*p) { label_len++; p++; }
-    int label_x = start_cx - (label_len * 4);
-    int label_y = start_cy - 4;
-    gui_draw_text(label_x, label_y, start_label, 0x000000, 0xC0C0C0);
+    int taskbar_top = fb_height - TASKBAR_H;
+    gui_draw_rect(0, taskbar_top, fb_width, TASKBAR_H, 0x1D2027);
+    gui_draw_rect(0, taskbar_top, fb_width, 2, 0x4B4F58);
 
-    /* Right: time / volume / wifi / settings */
-    int right_x = fb_width - 220;
-    int right_y = fb_height - TASKBAR_H + 6;
-    gui_draw_text(right_x, right_y, "{TIME} (AM/PM)", 0xFFFFFF, 0x202020);
-    gui_draw_text(right_x, right_y + 12, "Volume: (audio lvl)", 0xFFFFFF, 0x202020);
-    gui_draw_text(right_x, right_y + 24, "Wifi: (wifi)", 0xFFFFFF, 0x202020);
-    gui_draw_text(right_x, right_y + 36, "Settings", 0xFFFFFF, 0x202020);
+    desktop_draw_start_button(taskbar_top);
 
-    /* Draw any open apps/windows */
-    extern void notepad_draw(void);
-    notepad_draw();
-    extern void calculator_draw(void);
-    calculator_draw();
-    extern void spreadsheet_draw(void);
-    spreadsheet_draw();
-    extern void file_explorer_draw(void);
-    file_explorer_draw();
-    extern void browser_draw(void);
-    browser_draw();
+    int tb_x = 84;
+    for (int i = 0; i < window_count(); ++i) {
+        window_t *win = window_get(i);
+        if (!win) continue;
+        int w = 100;
+        int y = taskbar_top + 12;
+        uint32_t bg = window_is_minimized(win) ? 0x32363D : 0x40454E;
+        gui_draw_rect(tb_x, y, w, 26, bg);
+        gui_draw_text(tb_x + 6, y + 9, win->title, 0xFFFFFF, bg);
+        tb_x += w + 10;
+    }
+
+    desktop_draw_system_tray(taskbar_top);
+
+    char status[96];
+    sprintf(status, "FB %ux%u @ %ubpp", fb_width, fb_height, fb_bpp);
+    gui_draw_text(16, fb_height - TASKBAR_H - 18, status, 0xE0E0E0, 0x1D2027);
 }
+

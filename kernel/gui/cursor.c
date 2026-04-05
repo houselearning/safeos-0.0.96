@@ -23,22 +23,23 @@ void cursor_move(int dx, int dy) {
 void cursor_draw(void) {
     if (!cursor_visible) return;
 
-    /* Draw a simple arrow pointer 12x16 (white). Use a fixed-size mask
-       encoded as 16-bit rows so the array size is compile-time constant. */
-    const int W = 12, H = 16;
-    static const uint16_t mask[16] = {
-        0x8000, 0xC000, 0xE000, 0xF000,
-        0xF800, 0xFC00, 0xFE00, 0xFF00,
-        0xFE00, 0xEC00, 0xC800, 0x9000,
-        0x2000, 0x0000, 0x0000, 0x0000
-    };
-    for (int y = 0; y < H; ++y) {
-        for (int x = 0; x < W; ++x) {
-            if (mask[y] & (1u << (15 - x))) {
-                fb_putpixel(cursor_x + x, cursor_y + y, 0xFFFFFF);
-            }
-        }
+    /* Draw a visible pointer cross at cursor location */
+    const int SIZE = 8;
+    for (int dy = -SIZE; dy <= SIZE; ++dy) {
+        int y = cursor_y + dy;
+        if (y < 0 || y >= (int)fb_height) continue;
+        int x = cursor_x;
+        if (x >= 0 && x < (int)fb_width) fb_putpixel(x, y, 0x00FF00);
     }
+    for (int dx = -SIZE; dx <= SIZE; ++dx) {
+        int x = cursor_x + dx;
+        if (x < 0 || x >= (int)fb_width) continue;
+        int y = cursor_y;
+        if (y >= 0 && y < (int)fb_height) fb_putpixel(x, y, 0x00FF00);
+    }
+
+    /* Add a central dot to make it obvious */
+    fb_putpixel(cursor_x, cursor_y, 0xFF0000);
 }
 
 int cursor_get_x(void) {

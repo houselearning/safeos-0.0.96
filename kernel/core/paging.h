@@ -21,4 +21,10 @@
    physical addresses, maintaining all current memory access patterns. */
 void paging_enable_identity_4mb(void);
 
+/* Map 4MB-aligned virtual page to 4MB-aligned physical page with given flags.
+   Flags should include at least present (0x1) and writable (0x2).
+   This allows a GPU driver to map framebuffer physical VRAM into a stable
+   virtual aperture (e.g. 0xC0000000). */
+void paging_map_4mb(uint32_t virt_addr, uint32_t phys_addr, uint32_t flags);
+
 #endif

@@ -7,7 +7,7 @@
 #define E1000_NUM_TX_DESC 8
 
 typedef struct {
-    volatile uint64_t addr;
+    volatile uint32_t addr;
     volatile uint16_t length;
     volatile uint8_t cso;
     volatile uint8_t cmd;
@@ -17,7 +17,7 @@ typedef struct {
 } e1000_tx_desc_t;
 
 typedef struct {
-    volatile uint64_t addr;
+    volatile uint32_t addr;
     volatile uint16_t length;
     volatile uint16_t checksum;
     volatile uint8_t status;
@@ -49,7 +49,7 @@ int e1000_init(uint8_t bus, uint8_t slot, uint8_t func) {
 
     // Set up transmit
     for (int i = 0; i < E1000_NUM_TX_DESC; i++) {
-        tx_descs[i].addr = (uint64_t)&tx_bufs[i];
+        tx_descs[i].addr = (uint32_t)&tx_bufs[i];
         tx_descs[i].cmd = 0;
         tx_descs[i].status = 1; // DD
     }
@@ -61,7 +61,7 @@ int e1000_init(uint8_t bus, uint8_t slot, uint8_t func) {
 
     // Set up receive
     for (int i = 0; i < E1000_NUM_RX_DESC; i++) {
-        rx_descs[i].addr = (uint64_t)&rx_bufs[i];
+        rx_descs[i].addr = (uint32_t)&rx_bufs[i];
         rx_descs[i].status = 0;
     }
     mmio_write32(0x2800, (uint32_t)&rx_descs); // RDBAL

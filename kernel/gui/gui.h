@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "gui_event.h"
+#include "../arch/x86/framebuffer.h"
 
 // Colors used by the GUI
 #define GUI_COLOR_TEXT      0xFFFFFF

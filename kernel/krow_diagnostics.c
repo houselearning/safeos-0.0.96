@@ -409,10 +409,24 @@ void print_final_result(void) {
    ============================================================================ */
 
 int krow_diagnostics_run(int headless) {
+    /* IMMEDIATE VGA OUTPUT - before any other code */
+    volatile uint16_t *vga = (volatile uint16_t *)0xB8000;
+    vga[14] = 0x0F38;  /* '8' at position 14 */
+    
+    /* Serial output */
+    __asm__ __volatile__("outb %%al, %%dx" :: "a"('8'), "d"((unsigned short)0x3f8));
+    
     /* Initialize with simple seed */
     krow_seed = 42;
     
-    /* EARLY CHECKPOINTS FOR BOOT DEBUG */
+    /* In graphics mode, skip full diagnostics - go straight to boot */
+    if (!headless) {
+        vga[15] = 0x0F47;  /* 'G' at position 15 */
+        __asm__ __volatile__("outb %%al, %%dx" :: "a"('G'), "d"((unsigned short)0x3f8));
+        return 0;  /* No faults */
+    }
+    
+    /* For headless mode, do diagnostics */
     checkpoint_init("Krow Diagnostics Started");
     
     print_header();

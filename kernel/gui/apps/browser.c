@@ -14,13 +14,20 @@ static int url_focused = 0;
 
 void browser_open(const char *path) {
     (void)path;
+    if (win) {
+        if (window_is_minimized(win) || !window_is_visible(win)) {
+            window_restore(win);
+            return;
+        }
+        return;
+    }
     win = window_create("Browser", 200, 100, 800, 600);
     url_cursor = strlen(url);
     page[0] = 0;
 }
 
 void browser_handle_event(gui_event_t *ev) {
-    if (!win) return;
+    if (!win || window_is_minimized(win) || !window_is_visible(win)) return;
 
     int url_x = win->x + 10;
     int url_y = win->y + 30;

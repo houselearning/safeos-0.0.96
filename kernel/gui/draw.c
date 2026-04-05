@@ -12,9 +12,20 @@ void gui_draw_rect(int x, int y, int w, int h, uint32_t color) {
     int start_x = x < 0 ? 0 : x;
     int end_x = (x + w) > (int)fb_width ? (int)fb_width : (x + w);
     if (start_y >= end_y || start_x >= end_x) return;
-    for (int yy = start_y; yy < end_y; yy++) {
-        for (int xx = start_x; xx < end_x; xx++) {
-            fb_putpixel(xx, yy, color);
+    
+    /* Use backbuffer directly instead of per-pixel operations for speed */
+    if (backbuffer) {
+        for (int yy = start_y; yy < end_y; yy++) {
+            for (int xx = start_x; xx < end_x; xx++) {
+                backbuffer[yy * fb_width + xx] = color;
+            }
+        }
+    } else {
+        /* Fallback: use per-pixel writes for physical framebuffer */
+        for (int yy = start_y; yy < end_y; yy++) {
+            for (int xx = start_x; xx < end_x; xx++) {
+                fb_putpixel(xx, yy, color);
+            }
         }
     }
 }
